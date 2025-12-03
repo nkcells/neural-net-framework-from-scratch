@@ -24,65 +24,8 @@
 #include <cmath> // std::exp
 #define euler static_cast<double>(std::exp(1)) // is this float or double?
 #include "matrix.h"
-class Node{
-    const std::vector<int>* layers_;
-    public:
-    std::shared_ptr<Matrix> weights_;
-    std::shared_ptr<Matrix> biases_;
-    std::shared_ptr<Node> prev_{nullptr};
-    std::shared_ptr<Node> next_{nullptr};
+#include "node.h"
 
-    std::shared_ptr<Matrix> aOut_; //1xnum of ouputs
-    std::shared_ptr<Matrix> residuals_; //1xnum of outputs
-
-    std::shared_ptr<Matrix> gradients_weights; //num of weightsx num of outputs
-    
-    std::shared_ptr<Matrix> dels_;
-    std::shared_ptr<Matrix> z; //wx plus b
-    double totalLoss_;
-
-    bool isOutputlayer{false};
-    
-    // std::shared_ptr<Matrix> gradients
-
-    Node(std::shared_ptr<Matrix>& weights,std::shared_ptr<Matrix>& biases) : weights_(weights), biases_(biases){
-    }
-
-    void printNodes(){
-        // weights_->printMatrix();
-        // std::cout << "....." << std::endl;
-
-        std::shared_ptr<Node> nextOne = this->next_->prev_; //starting with head
-        // std::shar nextOne& = this;
-        while (nextOne != nullptr){
-            nextOne->weights_->printMatrix();
-            std::cout << "~" << std::endl;
-            nextOne->biases_->printMatrix();
-
-            std::cout << "....." << std::endl;
-            nextOne = nextOne->next_;
-        }
-    }
-    
-    void printDimensions(){
-        std::shared_ptr<Node> nextOne = this->next_->prev_; //starting with head
-        while (nextOne != nullptr){
-            
-            std::cout << nextOne->weights_->getRows() << "x" <<
-            nextOne->weights_->getColumns()
-            << "+" <<
-            nextOne->biases_->getRows() << "x" <<
-            nextOne->biases_->getColumns()
-            << std::endl;
-            
-            nextOne = nextOne->next_;
-        }
-
-    }
-
-
-
-};
 class network{
     
     const std::vector<int>* layers_;
