@@ -33,6 +33,7 @@ class network{
     // Node* nextNode = head.next;
     std::shared_ptr<Node> myNet;
     std::shared_ptr<Matrix> targetValue_;
+    std::shared_ptr<Node> lastLayerPtr;
     std::shared_ptr<Node> create_network(){
    
         std::shared_ptr<Matrix> temp_weights = std::make_shared<Matrix>((*layers_).at(0),(*layers_).at(1)); 
@@ -53,13 +54,13 @@ class network{
             temp_biases = std::make_shared<Matrix>(1,(*layers_).at(i+1));
 
             nextLeaf->next_ = std::make_shared<Node>(temp_weights,temp_biases);
-            nextLeaf->next_->prev_ = nextLeaf;
+            nextLeaf->next_->prev_ = nextLeaf; //next leaf's prev will point to node we on now
             nextLeaf = nextLeaf->next_;
             
          
         }
         (*nextLeaf).isOutputlayer = true;
- 
+        lastLayerPtr = nextLeaf;
 
         // head->printNodes();
 
@@ -73,7 +74,7 @@ class network{
             myNet = create_network();
 
             targetValue_ = std::make_shared<Matrix>(1,layers_->at(layers_->size() -1)); 
-            auto t = std::make_shared<Matrix>(1,3);
+            auto t = std::make_shared<Matrix>(1,1);
 
             /*
             input
@@ -94,6 +95,10 @@ class network{
           */
    
             forwardPass(t);
+            lastLayerPtr->prev_->weights_->printMatrix();
+            
+            outputLayerGrad(*lastLayerPtr);
+
 
             // myNet->printDimensions();
 
@@ -153,7 +158,7 @@ class network{
             // std::cout << 1 / ( 1 + static_cast<double>(std::pow((std::exp(1)), (-1 * matrix1(0,j))))<<std::endl;
         }
 
-        int sigmoid(int num){
+        double sigmoid(double num){
            
             num = 1 / ( 1 + static_cast<double>(std::pow(std::exp(1), -1 * num )));
             return num;
@@ -169,9 +174,9 @@ class network{
         return returnMatrix;
         // std::cout << 1 / ( 1 + static_cast<double>(std::pow((std::exp(1)), (-1 * matrix1(0,j))))<<std::endl;
     }
-        int ssr(Matrix& predicted_matrix, Matrix& target_matrix){
+        double ssr(Matrix& predicted_matrix, Matrix& target_matrix){
             auto difference = std::make_shared<Matrix>(predicted_matrix.getRows(),predicted_matrix.getColumns());
-            int sum{0};
+            double sum{0};
             std::transform(predicted_matrix.data_.begin(),predicted_matrix.data_.end(),target_matrix.data_.begin(),
             difference->data_.begin(), std::minus<int>());
 
@@ -188,6 +193,27 @@ class network{
             return sum;
         }
         
+        // overloaded function for when we pass in the outputLayer too
+        // used so we can ammend the residuals for the output layer 
+        void ssr(Matrix& predicted_matrix, Matrix& target_matrix, bool isALayerGiven, std::shared_ptr<Node> givenLayerPtr){
+            (givenLayerPtr)->residuals_ = std::make_shared<Matrix>(predicted_matrix.getRows(),predicted_matrix.getColumns());
+            double sum{0};
+            std::transform(predicted_matrix.data_.begin(),predicted_matrix.data_.end(),target_matrix.data_.begin(),
+            (givenLayerPtr)->residuals_->data_.begin(), std::minus<int>());
+
+            auto lossMatrix = std::make_shared<Matrix>(predicted_matrix.getRows(),predicted_matrix.getColumns());
+
+            std::transform((givenLayerPtr)->residuals_->data_.begin(),(givenLayerPtr)->residuals_->data_.end(),(givenLayerPtr)->residuals_->data_.begin(),
+            lossMatrix->data_.begin(), std::multiplies<int>());
+            
+            for (int j = 0; j < (*lossMatrix).getColumns(); j++){
+                (*lossMatrix)(0,j) *= 1/2;
+                
+                sum += (*lossMatrix)(0,j);
+                
+            }
+            givenLayerPtr->totalLoss_ = sum;
+        }
         void forwardPass(std::shared_ptr<Matrix> input){
             std::shared_ptr<Matrix> product = input;
 
@@ -199,23 +225,30 @@ class network{
                   << std::endl;
                 (*product).printMatrix();
                 (nextOne->weights_)->printMatrix();
-                std::cout<<"multiply" <<std::endl;
+                // std::cout<<"multiply" <<std::endl;
 
                 product = multiply(*product,*(nextOne->weights_));
-                std::cout<<"done"<<std::endl;
-
+                // std::cout<<"done"<<std::endl;
+                std::cout << "Product after matrix multiplication:" << std::endl;
                 (*product).printMatrix();
                 std::cout<<std::endl;
 
                 product = add(*product,*(nextOne->biases_));
-                nextOne->z = std::make_shared<Matrix>(*product);
+                std::cout << "After addition: "<<std::endl;
                 (*product).printMatrix();
+                nextOne->z = std::make_shared<Matrix>(*product);
+                std::cout << "{" << (*nextOne->z).getRows() << 'x' << (*nextOne->z).getColumns() << "}" << std::endl;
+                // (*product).printMatrix();
                 
                 // relu(*product);
                 sigmoid(*product);
+                std::cout << "After sigmoid: " << std::endl;
+
+                (*product).printMatrix();
+
                 nextOne->aOut_ = std::make_shared<Matrix>(*product);
                 // this saves the activation to aOut for a layer
-                (*product).printMatrix();
+                // (*product).printMatrix();
 
                 // nextOne->printNodes();
                 if (stopNext) {break;}
@@ -224,13 +257,15 @@ class network{
 
                 nextOne = nextOne->next_;
             } 
-            std::cout << 101 << std::endl;
+            std::cout << "Output:  " << std::endl;
             (*product).printMatrix();
-            int residualSum = ssr(*product,*targetValue_);
+            
+            std::cout << "\n";
+            ssr(*product,*targetValue_,true,nextOne);
 
-            nextOne->residuals_ = std::make_shared<Matrix>(*product);
-            nextOne->totalLoss_ = residualSum;
-            std::cout << 201 << std::endl;
+            // nextOne->residuals_ = std::make_shared<Matrix>(*product);
+            // nextOne->totalLoss_ = residualSum;
+            
 
         }
         // for last hidden compute gradient
@@ -241,7 +276,7 @@ class network{
         del of all neurons in the prev layer * sig`(z) * weight connecting them and sum it together
         */
 
-       int dotProd(const Matrix& matrix1, const Matrix& matrix2, int rowToIterate1=0, int rowToIterate2=0){
+       double dotProd(const Matrix& matrix1, const Matrix& matrix2, int rowToIterate1=0, int rowToIterate2=0){
             // if (matrix1.getRows() != 1 || matrix2.getRows() != 1){
             //     std::cerr << "Error: dotProd input matrices #rows != 1" << std::endl;
             // } else 
@@ -250,7 +285,7 @@ class network{
                 std::cerr << "Error: dotProd input matrices do not have same length" << std::endl;
             }
             
-            int total{0};
+            double total{0};
             for (int j = 0; j < matrix1.getColumns(); j++){
                 total += matrix1(rowToIterate1,j) * matrix2(rowToIterate2,j);
             }
@@ -260,9 +295,18 @@ class network{
        
 
        void outputLayerGrad(Node& outputlayer){
-          outputlayer.dels_ = multiplyVector(*outputlayer.residuals_,*(sigPrime(*outputlayer.z)));// (a_j - y_j) * sig`(z_j)
+        //   (*outputlayer.residuals_).printMatrix();
+            std::shared_ptr<Matrix> sigPrimeOutput = ((sigPrime(*outputlayer.z)));
+            // (myMat).printMatrix();
+            // std::cout << (*outputlayer.prev_->z).getRows() << "x" << (*outputlayer.prev_->z).getColumns() << std::endl;
+
+            std::cout << (*outputlayer.residuals_).getRows() << "x" << (*outputlayer.residuals_).getColumns() << std::endl;
+
+            std::cout << (*sigPrimeOutput).getRows() << "x" << (*sigPrimeOutput).getColumns() << std::endl;
+          
+          outputlayer.dels_ = multiplyVector(*outputlayer.residuals_,*sigPrimeOutput);// (a_j - y_j) * sig`(z_j)
           outputlayer.gradients_weights = multiplyVector(*outputlayer.dels_,*outputlayer.aOut_);// dL/w_i,j = (del_j) * a_i
-       
+        
        }
 
        void hiddenLayerGrad(Node& hidLayer){
@@ -306,7 +350,7 @@ class network{
                 // multiplyVector(lol.residuals_,sigPrime()).residuals_
             
         }
-    }
+        }
         std::shared_ptr<Matrix> multiplyVector(const Matrix& matrix1, const Matrix& matrix2){
             auto product = std::make_shared<Matrix>(matrix1.getRows(),matrix1.getColumns());
             std::transform(matrix1.data_.begin(),matrix1.data_.end(),matrix2.data_.begin(),
@@ -349,7 +393,7 @@ class network{
 
 
 int main(){
-    std::vector<int> myVe = {3,2,1};
+    std::vector<int> myVe = {1,2,2};
     network myNetwork(myVe);
     
     return 0;
