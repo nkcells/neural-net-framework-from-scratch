@@ -94,10 +94,13 @@ class network{
           0  0
           */
    
+            // should add argument for num of times so we can have mini batches/ batches
             forwardPass(t);
             lastLayerPtr->prev_->weights_->printMatrix();
             
             outputLayerGrad(*lastLayerPtr);
+            std::cout << "f\nf\nn\n";
+            hiddenLayerGrad(*lastLayerPtr->prev_);
 
 
             // myNet->printDimensions();
@@ -218,6 +221,7 @@ class network{
             std::shared_ptr<Matrix> product = input;
 
             std::shared_ptr<Node> nextOne = myNet;
+            nextOne->input_ = std::make_shared<Matrix>(*input);
             bool stopNext{false}; 
             while (1){
                 std::cout << "Trying to multiply a " << (*product).getRows() << "x" 
@@ -292,8 +296,6 @@ class network{
             return total;
        }
 
-       
-
        void outputLayerGrad(Node& outputlayer){
         //   (*outputlayer.residuals_).printMatrix();
             std::shared_ptr<Matrix> sigPrimeOutput = ((sigPrime(*outputlayer.z)));
@@ -305,33 +307,77 @@ class network{
             std::cout << (*sigPrimeOutput).getRows() << "x" << (*sigPrimeOutput).getColumns() << std::endl;
           
           outputlayer.dels_ = multiplyVector(*outputlayer.residuals_,*sigPrimeOutput);// (a_j - y_j) * sig`(z_j)
-          outputlayer.gradients_weights = multiplyVector(*outputlayer.dels_,*outputlayer.aOut_);// dL/w_i,j = (del_j) * a_i
-        
-       }
+          outputlayer.gradients_weights = multiplyVector(*outputlayer.dels_,*outputlayer.prev_->aOut_);// dL/w_i,j = (del_j) * a_i
+          
 
-       void hiddenLayerGrad(Node& hidLayer){
+            // std::cout << (*outputlayer.dels_).getRows() << "x" << (*outputlayer.dels_).getColumns() << std::endl;
+            // std::cout << (*outputlayer.gradients_weights).getRows() << "x" << (*outputlayer.gradients_weights).getColumns() << std::endl;
+
+       }
+       void hiddenLayerGrad(Node& hidLayer ){
         double learningRate{0.02};
         double summation{0};
+        bool stopNext{false}; 
+
+               
+        std::cout << "didn't made here1" << std::endl;
+
         std::shared_ptr<Node> currHiddenLayer = hidLayer.next_->prev_;
+        std::cout << "didn't make here2" << std::endl;
         std::shared_ptr<Node> nextLayer;
-        while (currHiddenLayer->prev_ != nullptr){ // this prob wont work since we need a_out of input layer
-        for (int i=0; i<currHiddenLayer->weights_->getColumns(); i++){
+        (*currHiddenLayer).printDimensions();
+        std::cout << "ma" << std::endl;
+
+        while (1){ // this prob wont work since we need a_out of input layer
+            std::cout << "ahahaasdfa" << std::endl;
             nextLayer = currHiddenLayer->next_;
 
-            for (int j =0; j<nextLayer->weights_->getColumns(); j++){
-                summation = dotProd(*nextLayer->dels_, *currHiddenLayer->weights_,0,j);
-                (*currHiddenLayer->gradients_weights)(i,j) = (*nextLayer->dels_)(i,j) * (*currHiddenLayer->aOut_)(0,j) ; // no point in keeping track of this    
-                (*currHiddenLayer->weights_)(i,j) = (*currHiddenLayer->weights_)(i,j) - (learningRate * (*currHiddenLayer->gradients_weights)(i,j));
+            for (int i=0; i<currHiddenLayer->weights_->getColumns(); i++){
+                std::cout << "ding" << std::endl;
+                for (int j =0; j<nextLayer->weights_->getColumns(); j++){
+                    summation = dotProd(*nextLayer->dels_, *currHiddenLayer->weights_,0,j);
+                    std::cout << "murphy-0" <<std::endl;
+                    // auto hey = std::make_shared<M
+                    // this hasn't been initializized yet.
+                    (*currHiddenLayer->gradients_weights)(i,j) = (*nextLayer->dels_)(i,j) * (*currHiddenLayer->aOut_)(0,j) ; // no point in keeping track of this    
+                    std::cout << "murphy-1" <<std::endl;
 
+                    (*currHiddenLayer->weights_)(i,j) = (*currHiddenLayer->weights_)(i,j) - (learningRate * (*currHiddenLayer->gradients_weights)(i,j));
+                    std::cout << "murphy-2" <<std::endl;
+
+                }
+                // (*nextLayer)
+
+                //not sur why we index by i
+                std::cout << "m" << std::endl;
+                double cat = sigPrime((*currHiddenLayer->z)(i,0));
+                std::cout << "n" <<std::endl;
+                (*(currHiddenLayer->dels_))(i,0) = summation * cat; 
+                std::cout << "o" << std::endl;
+                std::cout << (*currHiddenLayer->dels_).getRows() << "xx" << (*currHiddenLayer->dels_).getColumns() << std::endl;
+            }   
+            // not sure if it will work
+            std::cout << " four " << std::endl;
+            (currHiddenLayer->dels_->printDimensionz());
+            if (currHiddenLayer->prev_ != nullptr){
+                currHiddenLayer->input_->printDimensionz();
+                std::cout << "u" << std::endl;
+
+            }else{
+                // ****** this doesn't work and i don't know why note to self
+            std::cout << "we have reached the last hidden layer in hiddenLayerGrad" << std::endl;
+            currHiddenLayer->gradients_weights = multiplyVector(*currHiddenLayer->dels_,*currHiddenLayer->input_);
+            std::cout << "did that";
+            // (currHiddenLayer->prev_->weights_->printDimensionz());
             }
-            // (*nextLayer)
-            (*currHiddenLayer->dels_)(i,0) = summation * sigPrime((*currHiddenLayer->z)(i,0));
-        
-        }   
-        currHiddenLayer = currHiddenLayer->prev_;
-       }
-       }
+            
+            std:: cout << "five" << std::endl;
+            // if (stopNext) {break;}
+            if (currHiddenLayer->prev_ == nullptr) {break;} //go through
+            currHiddenLayer = currHiddenLayer->prev_;
 
+        }
+        }
 
        /*void hiddenGrad(Node& hiddenLayer){
             auto mat = multiplyVector(hiddenLayer.next_->dels_,*(sigPrime(hiddenLayer.z)));
@@ -352,6 +398,11 @@ class network{
         }
         }
         std::shared_ptr<Matrix> multiplyVector(const Matrix& matrix1, const Matrix& matrix2){
+            if (matrix1.data_.size() != matrix2.data_.size()){
+                std::cerr << "Error: multiplyVector trying to multiply a vector of size " 
+                << matrix1.getRows() << "x" << matrix1.getColumns()
+                << "by a " << matrix2.getRows() << "x" << matrix2.getColumns() << std::endl;
+            }
             auto product = std::make_shared<Matrix>(matrix1.getRows(),matrix1.getColumns());
             std::transform(matrix1.data_.begin(),matrix1.data_.end(),matrix2.data_.begin(),
             product->data_.begin(), std::multiplies<double>());

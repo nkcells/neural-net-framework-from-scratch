@@ -8,6 +8,7 @@
 class Node{
     const std::vector<int>* layers_;
     public:
+    std::shared_ptr<Matrix> input_; //this is specifically for first layer
     std::shared_ptr<Matrix> weights_;
     std::shared_ptr<Matrix> biases_;
     std::shared_ptr<Node> prev_{nullptr};
@@ -17,7 +18,7 @@ class Node{
     std::shared_ptr<Matrix> residuals_; //1xnum of outputs
 
     std::shared_ptr<Matrix> gradients_weights; //num of weightsx num of outputs
-    
+    std::shared_ptr<Matrix> gradients_biases;
     std::shared_ptr<Matrix> dels_;
     std::shared_ptr<Matrix> z; //wx plus b
     double totalLoss_;

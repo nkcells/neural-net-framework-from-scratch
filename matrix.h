@@ -21,6 +21,7 @@ class Matrix{
         const int getColumns() const {return columns_;}
 
         void printMatrix();
+        void printDimensionz();
         
 };
 #endif

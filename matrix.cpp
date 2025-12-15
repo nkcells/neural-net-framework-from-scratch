@@ -41,4 +41,8 @@ void Matrix::printMatrix(){
     std::cout << std::string(2*columns_,'-') << std::endl;
 }
 
+void Matrix::printDimensionz(){
+    std::cout << rows_ << 'x' << columns_ << std::endl;
+}
+
 

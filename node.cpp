@@ -1,5 +1,7 @@
 #include "node.h"
 Node::Node(std::shared_ptr<Matrix>& weights,std::shared_ptr<Matrix>& biases) : weights_(weights), biases_(biases){
+    gradients_weights = std::make_shared<Matrix>(weights->getRows(),weights->getColumns());
+    dels_ = std::make_shared<Matrix>(weights->getRows(),1); // not sure if this is right
     }
 void Node::printNodes(){
     // weights_->printMatrix();
@@ -17,14 +19,14 @@ void Node::printNodes(){
     }
 }
 
-void Node::printDimensions(){
+void Node::printDimensions(){ 
     std::shared_ptr<Node> nextOne = this->next_->prev_; //starting with head
-    while (nextOne != nullptr){
+    while (nextOne != nullptr){ // iterates through the whole network this is bad should only print dimenson for self
         
-        std::cout << nextOne->weights_->getRows() << "x" <<
+        std::cout << "weights: " << nextOne->weights_->getRows() << "x" <<
         nextOne->weights_->getColumns()
-        << "+" <<
-        nextOne->biases_->getRows() << "x" <<
+        << " + " <<
+        "biases: " << nextOne->biases_->getRows() << "x" <<
         nextOne->biases_->getColumns()
         << std::endl;
         
