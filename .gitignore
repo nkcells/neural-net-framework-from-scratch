@@ -1,2 +1,4 @@
 *.o
-
+*.dysm
+*.vscode
+*.json

@@ -2,6 +2,7 @@
 #define NODE_H
 #include <vector>
 #include <iostream>
+#include <memory> // for std shared_ptr
 
 #include "matrix.h"
 
@@ -11,8 +12,8 @@ class Node{
     std::shared_ptr<Matrix> input_; //this is specifically for first layer
     std::shared_ptr<Matrix> weights_;
     std::shared_ptr<Matrix> biases_;
-    std::shared_ptr<Node> prev_{nullptr};
-    std::shared_ptr<Node> next_{nullptr};
+    std::shared_ptr<Node> prev_;
+    std::shared_ptr<Node> next_;
 
     std::shared_ptr<Matrix> aOut_; //1xnum of ouputs
     std::shared_ptr<Matrix> residuals_; //1xnum of outputs
@@ -23,9 +24,11 @@ class Node{
     std::shared_ptr<Matrix> z; //wx plus b
     double totalLoss_;
 
-    bool isOutputlayer{false};
+    bool isOutputlayer;
     
     // std::shared_ptr<Matrix> gradients
+
+
 
     Node(std::shared_ptr<Matrix>& weights,std::shared_ptr<Matrix>& biases);
     void printNodes();

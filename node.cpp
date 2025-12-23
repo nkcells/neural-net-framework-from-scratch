@@ -1,7 +1,9 @@
 #include "node.h"
 Node::Node(std::shared_ptr<Matrix>& weights,std::shared_ptr<Matrix>& biases) : weights_(weights), biases_(biases){
-    gradients_weights = std::make_shared<Matrix>(weights->getRows(),weights->getColumns());
-    dels_ = std::make_shared<Matrix>(weights->getRows(),1); // not sure if this is right
+    gradients_weights = std::make_shared<Matrix>(weights->getRows(),weights->getColumns()); //ggradient for every weight
+    dels_ = std::make_shared<Matrix>(1,weights_->getColumns()); // we should have a del for every neuron
+    next_ = nullptr;
+    isOutputlayer = false;
     }
 void Node::printNodes(){
     // weights_->printMatrix();
