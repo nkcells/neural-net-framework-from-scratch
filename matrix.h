@@ -9,7 +9,7 @@ class Matrix{
     void rando();
     public:
         std::vector<double> data_;
-
+        
         Matrix(int m, int n, bool randomize = true);
         Matrix(const Matrix& inputMatrix );
         

@@ -83,9 +83,9 @@ class network{
 
             // // should add argument for num of times so we can have mini batches/ batches
             forwardPass(t);
-            // lastLayerPtr->prev_->weights_->printMatrix();
+            // lastLayerPtr->weights_->printMatrix();
             
-            // outputLayerGrad(*lastLayerPtr);
+            outputLayerGrad(*lastLayerPtr);
             // std::cout << "f\nf\nn\n";
             // hiddenLayerGrad(*lastLayerPtr->prev_);
 
@@ -93,6 +93,39 @@ class network{
             // myNet->printDimensions();
 
         }
+          std::shared_ptr<Matrix> multiplyTranspose(const Matrix& matrix1, const Matrix& matrix2){ //activation, weights
+            std::shared_ptr<Matrix> productMatrix;
+            if (matrix1.getColumns() == matrix2.getColumns()){
+                productMatrix = std::make_shared<Matrix>(matrix1.getRows(),matrix2.getRows(),false);
+                
+                for (int which_row = 0; which_row < matrix1.getRows(); which_row++){ //4
+                    
+                    for (int which_column = 0; which_column < matrix2.getRows(); which_column++){ //2
+                        double cell_total = 0;
+                        //1
+                        for(int i = 0;i<matrix2.getColumns(); i++){ //could also be matrix1.getColumns() //1
+                            cell_total += (matrix1(which_row,i)) * matrix2(which_column,i);
+                            // std::cout << cell_total <<std::endl;
+
+                        }
+
+                        
+
+
+                        (*productMatrix)(which_row, which_column) = cell_total;
+                    }
+                }
+
+            } else{
+                std::cerr << "Error: {multiplyTranspose}!\nTrying to multiply a " << matrix1.getRows() << "x" 
+                  << matrix1.getColumns() << "*" << matrix2.getColumns() << "x" << matrix2.getRows()
+                  << "\nNote the dimension printed above is the transposed dimension of matrix 2" << std::endl;
+            
+            }   
+
+            return productMatrix;
+        }
+      
 
         std::shared_ptr<Matrix> multiply(const Matrix& matrix1, const Matrix& matrix2){ //activation, weights
             std::shared_ptr<Matrix> productMatrix;
@@ -106,13 +139,8 @@ class network{
 
                         for(int i = 0;i<matrix2.getRows(); i++){ //could also be matrix1.getColumns()
                             cell_total += (matrix1(which_row,i)) * matrix2(i,which_column);
-                            // std::cout << cell_total <<std::endl;
-
+                
                         }
-
-                        
-
-
                         (*productMatrix)(which_row, which_column) = cell_total;
                     }
                 }
@@ -299,7 +327,7 @@ class network{
             std::cout << (*sigPrimeOutput).getRows() << "x" << (*sigPrimeOutput).getColumns() << std::endl;
           
           outputlayer.dels_ = multiplyVector(*outputlayer.residuals_,*sigPrimeOutput);// (a_j - y_j) * sig`(z_j)
-          outputlayer.gradients_weights = multiply(*outputlayer.dels_,*outputlayer.prev_->aOut_);// dL/w_i,j = (del_j) * a_i multiply instead of multiplyVector 1234
+          outputlayer.gradients_weights = multiplyTranspose(*outputlayer.dels_,*outputlayer.prev_->aOut_);// dL/w_i,j = (del_j) * a_i (transpose a_i)
           
 
             // std::cout << (*outputlayer.dels_).getRows() << "x" << (*outputlayer.dels_).getColumns() << std::endl;
