@@ -23,7 +23,7 @@ void Node::printNodes(){
 
 void Node::printDimensions(){ 
     std::shared_ptr<Node> nextOne = this->next_->prev_; //starting with head
-    while (nextOne != nullptr){ // iterates through the whole network this is bad should only print dimenson for self
+    // while (nextOne != nullptr){ // iterates through the whole network this is bad should only print dimenson for self
         
         std::cout << "weights: " << nextOne->weights_->getRows() << "x" <<
         nextOne->weights_->getColumns()
@@ -32,8 +32,8 @@ void Node::printDimensions(){
         nextOne->biases_->getColumns()
         << std::endl;
         
-        nextOne = nextOne->next_;
-    }
+        // nextOne = nextOne->next_;
+    // }
 }
 
 
