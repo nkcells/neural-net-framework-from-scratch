@@ -15,4 +15,4 @@ Weight matrix shape = (number of neurons in next layer) × (number of neurons in
 Bias vector shape = (number of neurons in that layer) × 1
 
 mini-batches
-
+![alt text](image.png)

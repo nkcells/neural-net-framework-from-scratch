@@ -40,6 +40,7 @@ class network{
         std::shared_ptr<Matrix> temp_weights = std::make_shared<Matrix>((*layers_).at(1),(*layers_).at(0)); 
         std::shared_ptr<Matrix> temp_biases  = std::make_shared<Matrix>((*layers_).at(1),1);
         auto head = std::make_shared<Node>(temp_weights,temp_biases);
+        head->isInputLayer = true;
         
         
         temp_weights = std::make_shared<Matrix>((*layers_).at(2),(*layers_).at(1));
@@ -78,7 +79,7 @@ class network{
             myNet = create_network();
 
             targetValue_ = std::make_shared<Matrix>(layers_->at(layers_->size() -1),1); 
-            auto t = std::make_shared<Matrix>(2,1);
+            auto t = std::make_shared<Matrix>(layers.at(0),1);
 
 
             // // should add argument for num of times so we can have mini batches/ batches
@@ -87,7 +88,7 @@ class network{
             
             outputLayerGrad(*lastLayerPtr);
             // std::cout << "f\nf\nn\n";
-            hiddenLayerGrad(*lastLayerPtr->prev_);
+            hiddenLayerGrad(*lastLayerPtr->prev_.lock());
 
             
             // myNet->printDimensions();
@@ -313,7 +314,7 @@ class network{
 
             // nextOne->residuals_ = std::make_shared<Matrix>(*product);
             // nextOne->totalLoss_ = residualSum;
-            
+            std::cout << "------------done with forward------------------" << std::endl;
 
         }
         // for last hidden compute gradient
@@ -377,12 +378,13 @@ class network{
             std::cout << (*sigPrimeOutput).getRows() << "x" << (*sigPrimeOutput).getColumns() << std::endl;
           
           outputlayer.dels_ = multiplyVector(*outputlayer.residuals_,*sigPrimeOutput);// (a_j - y_j) * sig`(z_j)
-          outputlayer.gradients_weights = multiplyTransposem2(*outputlayer.dels_,*outputlayer.prev_->aOut_);// dL/w_i,j = (del_j) * a_i (transpose a_i)
+          outputlayer.gradients_weights = multiplyTransposem2(*outputlayer.dels_,*outputlayer.prev_.lock()->aOut_);// dL/w_i,j = (del_j) * a_i (transpose a_i)
           
 
             // std::cout << (*outputlayer.dels_).getRows() << "x" << (*outputlayer.dels_).getColumns() << std::endl;
             // std::cout << (*outputlayer.gradients_weights).getRows() << "x" << (*outputlayer.gradients_weights).getColumns() << std::endl;
 
+            std::cout << "-------------done with outputlayer grad---------------" << std::endl;
        }
 
        void scaleFirstColumn(Matrix& myVec, double scalar){
@@ -399,7 +401,7 @@ class network{
                
         std::cout << "didn't made here1" << std::endl;
 
-        std::shared_ptr<Node> currHiddenLayer = hidLayer.next_->prev_;
+        std::shared_ptr<Node> currHiddenLayer = hidLayer.next_->prev_.lock(); // this is fine but in this case but error prone if we do .next->prev on last layer since it doesn't exist
         std::cout << "didn't make here2" << std::endl;
         std::shared_ptr<Node> nextLayer;
         (*currHiddenLayer).printDimensions();
@@ -407,7 +409,9 @@ class network{
 
         while (1){ // this prob wont work since we need a_out of input layer
             std::cout << "ahahaasdfa" << std::endl;
-            nextLayer = currHiddenLayer->next_;
+            nextLayer = currHiddenLayer->next_; //5x3
+
+            nextLayer->printDimensions();
 
             /**for (int i=0; i<currHiddenLayer->weights_->getColumns(); i++){
                 std::cout << "ding" << std::endl;
@@ -439,16 +443,43 @@ class network{
                 std::cout << "o" << std::endl;
                 std::cout << (*currHiddenLayer->dels_).getRows() << "xx" << (*currHiddenLayer->dels_).getColumns() << std::endl;
             }   **/
-            (currHiddenLayer->gradients_weights) = multiplyTransposem2(*nextLayer->dels_,*currHiddenLayer->aOut_);
+            std::cout << "hidden grad time" << std::endl;
+            
             auto meh = multiplyTransposem1(*nextLayer->weights_,*nextLayer->dels_);
-            currHiddenLayer->dels_ = multiplyVector(*meh,*currHiddenLayer->sigPrimeOutput);
-            scaleFirstColumn((*currHiddenLayer->gradients_weights),learningRate);
+            meh->printDimensionz();
 
+            currHiddenLayer->dels_ = multiplyVector(*meh,*currHiddenLayer->sigPrimeOutput);
+            currHiddenLayer->dels_->printDimensionz();
+            if (currHiddenLayer->isInputLayer){
+                multiplyTransposem2(*currHiddenLayer->dels_,*currHiddenLayer->input_); //since i don't have an 'input layer' necessarily i cant use curr->prev
+            }else{
+                (currHiddenLayer->gradients_weights) = multiplyTransposem2(*currHiddenLayer->dels_,*currHiddenLayer->prev_.lock()->aOut_);
+            }
+
+            currHiddenLayer->gradients_weights->printDimensionz();
+
+
+            scaleFirstColumn((*currHiddenLayer->gradients_weights),learningRate);
+            currHiddenLayer->gradients_weights->printDimensionz();
+
+
+
+
+            if (currHiddenLayer->weights_->data_.size() != currHiddenLayer->gradients_weights->data_.size()) {
+                std::cerr << "SIZE MISMATCH: Weights=" << currHiddenLayer->weights_->data_.size() 
+                    << " Grads=" << currHiddenLayer->gradients_weights->data_.size()
+                     << std::endl;
+                currHiddenLayer->weights_->printDimensionz();
+                currHiddenLayer->gradients_weights->printDimensionz();
+
+                exit(1);
+            }        
+        
             std::transform((currHiddenLayer->weights_->data_).begin(),(currHiddenLayer->weights_->data_).end(),(currHiddenLayer->weights_->data_).begin(),
             (currHiddenLayer->gradients_weights->data_).begin(), std::minus<double>());
             // not sure if it will work
             // std::cout << " four " << std::endl;
-            (currHiddenLayer->dels_->printDimensionz());
+            // (currHiddenLayer->dels_->printDimensionz());
 
 
             
@@ -467,10 +498,14 @@ class network{
             
             std:: cout << "five" << std::endl;
             // if (stopNext) {break;}
-            if (currHiddenLayer->prev_ == nullptr) {break;} //go through
-            currHiddenLayer = currHiddenLayer->prev_;
-
+            if (currHiddenLayer->prev_.lock() == nullptr) {
+                std::cout << "stop" << std::endl;
+                break;
+            } else{
+            currHiddenLayer = currHiddenLayer->prev_.lock();
+            }
         }
+        std::cout << "done " << std::endl;
         }
 
        /*void hiddenGrad(Node& hiddenLayer){
@@ -485,9 +520,9 @@ class network{
                 auto delLast = multiplyVector(*(lol.aOut_), *(oneMinus(*lol.aOut_)));
                 delLast = multiplyVector(*(lol.residuals_),*delLast);
                 //((a_out - y) * a_out(1-a_out))
-                lol.gradients_weights = multiplyVector(*delLast,*(lol.prev_->aOut_));
+                lol.gradients_weights = multiplyVector(*delLast,*(lol.prev_.lock()->aOut_));
                 
-                // multiplyVector(lol.residuals_,sigPrime()).residuals_
+                // multiplyVector(lol.residuals_,sigPrime()).residcluals_
             
         }
         }
@@ -560,7 +595,7 @@ class network{
 
 
 int main(){
-    std::vector<int> myVe = {2,3,2,4
+    std::vector<int> myVe = {2,3,5,7,1
     };
     network myNetwork(myVe);
     
