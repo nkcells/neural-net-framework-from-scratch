@@ -38,13 +38,14 @@ class network{
     std::shared_ptr<Node> create_network(){
         
         std::shared_ptr<Matrix> temp_weights = std::make_shared<Matrix>((*layers_).at(1),(*layers_).at(0)); 
-        std::shared_ptr<Matrix> temp_biases  = std::make_shared<Matrix>((*layers_).at(1),1);
+        std::shared_ptr<Matrix> temp_biases  = std::make_shared<Matrix>((*layers_).at(1),1,true,true);
+        
         auto head = std::make_shared<Node>(temp_weights,temp_biases);
         head->isInputLayer = true;
         
         
         temp_weights = std::make_shared<Matrix>((*layers_).at(2),(*layers_).at(1));
-        temp_biases  = std::make_shared<Matrix>((*layers_).at(2),1);
+        temp_biases  = std::make_shared<Matrix>((*layers_).at(2),1,true,true);
         auto nextLeaf = std::make_shared<Node>(temp_weights,temp_biases);
 
         head->next_ = nextLeaf;
@@ -54,7 +55,7 @@ class network{
         // head.next_ = nextLeaf;
         for (int i = 3; i < layers_->size(); i++){ // minus one since the last layer doesn't have w/b
             temp_weights = std::make_shared<Matrix>((*layers_).at(i),(*layers_).at(i-1));
-            temp_biases = std::make_shared<Matrix>((*layers_).at(i),1);
+            temp_biases = std::make_shared<Matrix>((*layers_).at(i),1,true,true);
 
             nextLeaf->next_ = std::make_shared<Node>(temp_weights,temp_biases);
             nextLeaf->next_->prev_ = nextLeaf; //next leaf's prev will point to node we on now
@@ -79,18 +80,26 @@ class network{
             myNet = create_network();
 
             targetValue_ = std::make_shared<Matrix>(layers_->at(layers_->size() -1),1); 
+
             auto t = std::make_shared<Matrix>(layers.at(0),1);
 
+            for (int i = 1; i < 1000; i+=1){
 
-            // // should add argument for num of times so we can have mini batches/ batches
+                t->data_[0] = i;
+                targetValue_->data_[0] = 0.5 * double(i);
+               
+                // // should add argument for num of times so we can have mini batches/ batches
+                forwardPass(t);
+                // lastLayerPtr->weights_->printMatrix();
+                
+                outputLayerGrad(*lastLayerPtr);
+                // std::cout << "f\nf\nn\n";
+                hiddenLayerGrad(*lastLayerPtr->prev_.lock());
+            }
+            
+            t->data_[0] = 22;
             forwardPass(t);
-            // lastLayerPtr->weights_->printMatrix();
-            
-            outputLayerGrad(*lastLayerPtr);
-            // std::cout << "f\nf\nn\n";
-            hiddenLayerGrad(*lastLayerPtr->prev_.lock());
 
-            
             // myNet->printDimensions();
 
         }
@@ -184,7 +193,7 @@ class network{
         }
         std::shared_ptr<Matrix> add(const Matrix& matrix1, const Matrix& matrix2){
             auto sum = std::make_shared<Matrix>(matrix1.getRows(),matrix1.getColumns());
-            std::transform(matrix1.data_.begin(),matrix1.data_.end(),matrix2.data_.begin(),
+            std::transform(matrix1.data_.begin(),matrix1.data_.end(),matrix2.data_.begin(), // good
             sum->data_.begin(), std::plus<double>());
 
             return sum;
@@ -224,10 +233,10 @@ class network{
             auto difference = std::make_shared<Matrix>(predicted_matrix.getRows(),predicted_matrix.getColumns());
             double sum{0};
             std::transform(predicted_matrix.data_.begin(),predicted_matrix.data_.end(),target_matrix.data_.begin(),
-            difference->data_.begin(), std::minus<double>());
+            difference->data_.begin(), std::minus<double>()); // good
 
             std::transform((*difference).data_.begin(),(*difference).data_.end(),(*difference).data_.begin(),
-            difference->data_.begin(), std::multiplies<double>());
+            difference->data_.begin(), std::multiplies<double>()); // good
             
             for (int j = 0; j < (*difference).getColumns(); j++){
                 (*difference)(0,j) *= 1/2;
@@ -245,14 +254,14 @@ class network{
             (givenLayerPtr)->residuals_ = std::make_shared<Matrix>(predicted_matrix.getRows(),predicted_matrix.getColumns());
             double sum{0};
             std::transform(predicted_matrix.data_.begin(),predicted_matrix.data_.end(),target_matrix.data_.begin(),
-            (givenLayerPtr)->residuals_->data_.begin(), std::minus<double>());
+            (givenLayerPtr)->residuals_->data_.begin(), std::minus<double>()); // good
 
             auto lossMatrix = std::make_shared<Matrix>(predicted_matrix.getRows(),predicted_matrix.getColumns());
 
             std::transform((givenLayerPtr)->residuals_->data_.begin(),(givenLayerPtr)->residuals_->data_.end(),(givenLayerPtr)->residuals_->data_.begin(),
-            lossMatrix->data_.begin(), std::multiplies<double>());
+            lossMatrix->data_.begin(), std::multiplies<double>()); //good
             
-            for (int j = 0; j < (*lossMatrix).getColumns(); j++){
+            for (int j = 0; j < (*lossMatrix).getColumns(); j++){ // **** this may be wrong and should actually be by row
                 (*lossMatrix)(0,j) *= 1/2;
                 
                 sum += (*lossMatrix)(0,j);
@@ -266,6 +275,8 @@ class network{
             std::shared_ptr<Node> nextOne = myNet;
             nextOne->input_ = std::make_shared<Matrix>(*input);
             while (1){
+                std::cout << "<-------- Forward pass time -------->" << std::endl;
+
                 std::cout << "Trying to multiply a " << (*(nextOne->weights_)).getRows() << "x" << (*(nextOne->weights_)).getColumns()
                  << "*" << 
                  (*product).getRows() << "x"  << (*product).getColumns()
@@ -291,10 +302,15 @@ class network{
                 
                 // relu(*product);
                 nextOne->sigPrimeOutput = sigPrime(*product);
-                sigmoid(*product);
-                std::cout << "After sigmoid: " << std::endl;
-
-                (*product).printMatrix();
+                if (nextOne->isOutputlayer == false){
+                    sigmoid(*product);
+                    std::cout << "After sigmoid: " << std::endl;
+                    (*product).printMatrix();
+                } else {
+                    std::cout << "Simoid skipped {output layer}" << std::endl;
+                }
+                
+                
 
                 nextOne->aOut_ = std::make_shared<Matrix>(*product);
                 
@@ -368,6 +384,7 @@ class network{
        }
 
        void outputLayerGrad(Node& outputlayer){
+             std::cout << "--------OUTPUTlayerGrad begin-------" << std::endl;
         //   (*outputlayer.residuals_).printMatrix();
             std::shared_ptr<Matrix> sigPrimeOutput = ((sigPrime(*outputlayer.z))); //fixx
             // (myMat).printMatrix();
@@ -381,6 +398,19 @@ class network{
           outputlayer.gradients_weights = multiplyTransposem2(*outputlayer.dels_,*outputlayer.prev_.lock()->aOut_);// dL/w_i,j = (del_j) * a_i (transpose a_i)
           
 
+            if (outputlayer.weights_->data_.size() != outputlayer.gradients_weights->data_.size()) {
+                std::cerr << "SIZE MISMATCH: Weights=" << outputlayer.weights_->data_.size() 
+                    << " Grads=" << outputlayer.gradients_weights->data_.size()
+                     << std::endl;
+                outputlayer.weights_->printDimensionz();
+                outputlayer.gradients_weights->printDimensionz();
+
+                exit(1);
+            }        
+        
+            std::transform((outputlayer.weights_->data_).begin(),(outputlayer.weights_->data_).end(),
+            (outputlayer.gradients_weights->data_).begin(),(outputlayer.weights_->data_).begin(),
+             std::minus<double>()); // good
             // std::cout << (*outputlayer.dels_).getRows() << "x" << (*outputlayer.dels_).getColumns() << std::endl;
             // std::cout << (*outputlayer.gradients_weights).getRows() << "x" << (*outputlayer.gradients_weights).getColumns() << std::endl;
 
@@ -394,22 +424,19 @@ class network{
        }
 
        void hiddenLayerGrad(Node& hidLayer ){
-        double learningRate{0.02};
+        double learningRate{0.1};
         double summation{0};
         bool stopNext{false}; 
 
                
-        std::cout << "didn't made here1" << std::endl;
+        std::cout << "---------HIDDENlayerGrad begin--------------" << std::endl;
 
         std::shared_ptr<Node> currHiddenLayer = hidLayer.next_->prev_.lock(); // this is fine but in this case but error prone if we do .next->prev on last layer since it doesn't exist
-        std::cout << "didn't make here2" << std::endl;
         std::shared_ptr<Node> nextLayer;
         (*currHiddenLayer).printDimensions();
-        std::cout << "ma" << std::endl;
 
         while (1){ // this prob wont work since we need a_out of input layer
-            std::cout << "ahahaasdfa" << std::endl;
-            nextLayer = currHiddenLayer->next_; //5x3
+            nextLayer = currHiddenLayer->next_; 
 
             nextLayer->printDimensions();
 
@@ -474,9 +501,11 @@ class network{
 
                 exit(1);
             }        
-        
-            std::transform((currHiddenLayer->weights_->data_).begin(),(currHiddenLayer->weights_->data_).end(),(currHiddenLayer->weights_->data_).begin(),
-            (currHiddenLayer->gradients_weights->data_).begin(), std::minus<double>());
+
+            //0.00808702040489917 - 0.00023051553810784256= 0.0078
+            std::transform((currHiddenLayer->weights_->data_).begin(),(currHiddenLayer->weights_->data_).end(), (currHiddenLayer->gradients_weights->data_).begin(),
+            (currHiddenLayer->weights_->data_).begin(),
+             std::minus<double>());//good
             // not sure if it will work
             // std::cout << " four " << std::endl;
             // (currHiddenLayer->dels_->printDimensionz());
@@ -496,7 +525,6 @@ class network{
             // // (currHiddenLayer->prev_->weights_->printDimensionz());
             // }
             
-            std:: cout << "five" << std::endl;
             // if (stopNext) {break;}
             if (currHiddenLayer->prev_.lock() == nullptr) {
                 std::cout << "stop" << std::endl;
@@ -533,7 +561,7 @@ class network{
                 << "by a " << matrix2.getRows() << "x" << matrix2.getColumns() << std::endl;
             }
             auto product = std::make_shared<Matrix>(matrix1.getRows(),matrix1.getColumns());
-            std::transform(matrix1.data_.begin(),matrix1.data_.end(),matrix2.data_.begin(),
+            std::transform(matrix1.data_.begin(),matrix1.data_.end(),matrix2.data_.begin(), // good
             product->data_.begin(), std::multiplies<double>());
 
             return product;
@@ -593,10 +621,9 @@ class network{
         }
 };
 
-
+ 
 int main(){
-    std::vector<int> myVe = {2,3,5,7,1
-    };
+    std::vector<int> myVe = {1,1,1};
     network myNetwork(myVe);
     
     return 0;

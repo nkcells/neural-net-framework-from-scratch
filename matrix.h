@@ -2,14 +2,18 @@
 #define MATRIX_H
 #include <iostream>
 #include <vector>
+#include <random>
+
+
 
 class Matrix{
     int rows_, columns_;
 
     void rando();
+    void initToZeroFunc();
     public:
         std::vector<double> data_;
-        
+        Matrix(int m, int n, bool initToZero, bool neededAnExtraParameter);
         Matrix(int m, int n, bool randomize = true);
         Matrix(const Matrix& inputMatrix );
         

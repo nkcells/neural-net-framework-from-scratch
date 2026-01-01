@@ -16,3 +16,15 @@ Bias vector shape = (number of neurons in that layer) × 1
 
 mini-batches
 ![alt text](image.png)
+
+
+We are not updating the biases at all
+no sigmoid last layergt5er :done
+must fix std::transform
+
+check void ssr(Matrix& predicted_matrix, Matrix& target_matrix, bool isALayerGiven, std::shared_ptr<Node> givenLayerPtr)
+    for loop
+
+
+
+![alt text](image-1.png)
