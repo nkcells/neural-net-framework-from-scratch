@@ -26,6 +26,9 @@
 #define euler static_cast<double>(std::exp(1)) // is this float or double?
 #include "matrix.h"
 #include "node.h"
+#include <random>
+std::random_device rdn;
+std::mt19937 genn(rdn());
 
 class network{
     
@@ -82,11 +85,15 @@ class network{
             targetValue_ = std::make_shared<Matrix>(layers_->at(layers_->size() -1),1); 
 
             auto t = std::make_shared<Matrix>(layers.at(0),1);
+            
+            std::normal_distribution<double> dist(50.0, 100.0); //average 50, variance 50
+
 
             for (int i = 1; i < 1000; i+=1){
-
-                t->data_[0] = i;
-                targetValue_->data_[0] = 0.5 * double(i);
+                double randoDouble = dist(genn);
+                // std::cout << randoDouble << std::endl;
+                t->data_[0] = randoDouble;
+                targetValue_->data_[0] = 0.5 * randoDouble;
                
                 // // should add argument for num of times so we can have mini batches/ batches
                 forwardPass(t);
@@ -97,7 +104,7 @@ class network{
                 hiddenLayerGrad(*lastLayerPtr->prev_.lock());
             }
             
-            t->data_[0] = 22;
+            t->data_[0] = 52;
             forwardPass(t);
 
             // myNet->printDimensions();
@@ -247,6 +254,7 @@ class network{
 
             return sum;
         }
+      
         
         // overloaded function for when we pass in the outputLayer too
         // used so we can ammend the residuals for the output layer 
@@ -261,10 +269,10 @@ class network{
             std::transform((givenLayerPtr)->residuals_->data_.begin(),(givenLayerPtr)->residuals_->data_.end(),(givenLayerPtr)->residuals_->data_.begin(),
             lossMatrix->data_.begin(), std::multiplies<double>()); //good
             
-            for (int j = 0; j < (*lossMatrix).getColumns(); j++){ // **** this may be wrong and should actually be by row
-                (*lossMatrix)(0,j) *= 1/2;
+            for (int j = 0; j < (*lossMatrix).getRows(); j++){ // **** this may be wrong and should actually be by column
+                (*lossMatrix)(j,0) *= 1/2;
                 
-                sum += (*lossMatrix)(0,j);
+                sum += (*lossMatrix)(j,0);
                 
             }
             givenLayerPtr->totalLoss_ = sum;
@@ -411,6 +419,10 @@ class network{
             std::transform((outputlayer.weights_->data_).begin(),(outputlayer.weights_->data_).end(),
             (outputlayer.gradients_weights->data_).begin(),(outputlayer.weights_->data_).begin(),
              std::minus<double>()); // good
+
+            std::transform(outputlayer.biases_->data_.begin(),outputlayer.biases_->data_.end(),
+            outputlayer.dels_->data_.begin(),outputlayer.biases_->data_.begin(),
+            std::minus<double>());
             // std::cout << (*outputlayer.dels_).getRows() << "x" << (*outputlayer.dels_).getColumns() << std::endl;
             // std::cout << (*outputlayer.gradients_weights).getRows() << "x" << (*outputlayer.gradients_weights).getColumns() << std::endl;
 
@@ -422,9 +434,17 @@ class network{
             myVec(j,0) = scalar * myVec(j,0);
         }
        }
+       void scaleAll(Matrix& myVec, double scalar){
+            for (int i = 0; i < myVec.getColumns(); i++){
+                for (int j = 0; j < myVec.getRows(); j++){
+
+                myVec(j,i) = scalar * myVec(j,i);
+                }
+            }
+       }
 
        void hiddenLayerGrad(Node& hidLayer ){
-        double learningRate{0.1};
+        double learningRate{.01};
         double summation{0};
         bool stopNext{false}; 
 
@@ -486,7 +506,7 @@ class network{
             currHiddenLayer->gradients_weights->printDimensionz();
 
 
-            scaleFirstColumn((*currHiddenLayer->gradients_weights),learningRate);
+            scaleAll((*currHiddenLayer->gradients_weights),learningRate); //switched to scaleAll instead for scale first column may be wrong
             currHiddenLayer->gradients_weights->printDimensionz();
 
 
@@ -506,6 +526,10 @@ class network{
             std::transform((currHiddenLayer->weights_->data_).begin(),(currHiddenLayer->weights_->data_).end(), (currHiddenLayer->gradients_weights->data_).begin(),
             (currHiddenLayer->weights_->data_).begin(),
              std::minus<double>());//good
+
+            std::transform(currHiddenLayer->biases_->data_.begin(), currHiddenLayer->biases_->data_.end(),
+            currHiddenLayer->dels_->data_.begin(), currHiddenLayer->biases_->data_.begin(),
+            std::minus<double>());
             // not sure if it will work
             // std::cout << " four " << std::endl;
             // (currHiddenLayer->dels_->printDimensionz());
