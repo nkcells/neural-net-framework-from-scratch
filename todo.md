@@ -32,3 +32,6 @@ check void ssr(Matrix& predicted_matrix, Matrix& target_matrix, bool isALayerGiv
 
 
 should have one point in the code that i use to change the act fun
+
+
+sigmoid should apply to output layer
