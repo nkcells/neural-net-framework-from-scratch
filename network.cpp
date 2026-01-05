@@ -39,7 +39,9 @@ class network{
     std::shared_ptr<Matrix> targetValue_;
     std::shared_ptr<Node> lastLayerPtr;
 
-    std::shared_ptr<Matrix> (network::*activationFuncPtr)(const Matrix&, bool) = &network::sigmoid;
+    void (network::*activationFuncPtr)(Matrix&) = &network::sigmoid;
+    std::shared_ptr<Matrix> (network::*activationDerivativeFuncPtr)(const Matrix&) = &network::sigPrime;
+
 
 
 
@@ -319,8 +321,8 @@ class network{
                 // (*product).printMatrix();
                 
                 // relu(*product);
-                sigmoid(*product);
-                nextOne->sigPrimeOutput = sigPrime(*product);
+                (this->*activationFuncPtr)(*product);
+                nextOne->activationOut = (this->*activationDerivativeFuncPtr)(*product);
                 
 
 
@@ -409,16 +411,16 @@ class network{
        void outputLayerGrad(Node& outputlayer){
              std::cout << "--------OUTPUTlayerGrad begin-------" << std::endl;
         //   (*outputlayer.residuals_).printMatrix();
-            // std::shared_ptr<Matrix> sigPrimeOutput = ((sigPrime(*outputlayer.z))); //fixx
+            // std::shared_ptr<Matrix> activationOut = ((sigPrime(*outputlayer.z))); //fixx
             // (myMat).printMatrix();
             // std::cout << (*outputlayer.prev_->z).getRows() << "x" << (*outputlayer.prev_->z).getColumns() << std::endl;
 
             // std::cout << (*outputlayer.residuals_).getRows() << "x" << (*outputlayer.residuals_).getColumns() << std::endl;
 
-            // std::cout << (*sigPrimeOutput).getRows() << "x" << (*sigPrimeOutput).getColumns() << std::endl;
-            // std::cout << (*outputlayer.sigPrimeOutput).getRows() << "x" << (*outputlayer.sigPrimeOutput).getColumns() << std::endl;
+            // std::cout << (*activationOut).getRows() << "x" << (*activationOut).getColumns() << std::endl;
+            // std::cout << (*outputlayer.activationOut).getRows() << "x" << (*outputlayer.activationOut).getColumns() << std::endl;
             // exit(0);
-          outputlayer.dels_ = multiplyVector(*outputlayer.residuals_,*outputlayer.sigPrimeOutput);// (a_j - y_j) * sig`(z_j)
+          outputlayer.dels_ = multiplyVector(*outputlayer.residuals_,*outputlayer.activationOut);// (a_j - y_j) * sig`(z_j)
             //  outputlayer.dels_ =outputlayer.residuals_;// (a_j - y_j) * sig`(z_j) this is when it is linear thus no sigmoid for output layer
 
           outputlayer.gradients_weights = multiplyTransposem2(*outputlayer.dels_,*outputlayer.prev_.lock()->aOut_);// dL/w_i,j = (del_j) * a_i (transpose a_i)
@@ -513,7 +515,7 @@ class network{
             auto meh = multiplyTransposem1(*nextLayer->weights_,*nextLayer->dels_);
             meh->printDimensionz();
 
-            currHiddenLayer->dels_ = multiplyVector(*meh,*currHiddenLayer->sigPrimeOutput);
+            currHiddenLayer->dels_ = multiplyVector(*meh,*currHiddenLayer->activationOut);
             currHiddenLayer->dels_->printDimensionz();
             if (currHiddenLayer->isInputLayer){
                 multiplyTransposem2(*currHiddenLayer->dels_,*currHiddenLayer->input_); //since i don't have an 'input layer' necessarily i cant use curr->prev

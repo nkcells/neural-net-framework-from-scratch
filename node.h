@@ -16,7 +16,7 @@ class Node{
     std::shared_ptr<Node> next_;
 
     std::shared_ptr<Matrix> aOut_; //1xnum of ouputs
-    std::shared_ptr<Matrix> sigPrimeOutput; //mx1
+    std::shared_ptr<Matrix> activationOut; //mx1
     std::shared_ptr<Matrix> residuals_; //1xnum of outputs
 
     std::shared_ptr<Matrix> gradients_weights; //num of weightsx num of outputs
