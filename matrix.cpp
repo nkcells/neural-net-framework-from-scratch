@@ -9,8 +9,8 @@ std::mt19937 gen(rd());
 void Matrix::rando(){
     for (int i =0; i< rows_; i++){
         for (int j = 0; j < columns_; j++){
-            std::normal_distribution<double> dist(0.0, 0.5);
-            data_[i * columns_ + j] = dist(gen) * 0.01;
+            std::normal_distribution<double> dist(5, 5);
+            data_[i * columns_ + j] = dist(gen);
         }
     }
 }

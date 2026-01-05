@@ -39,9 +39,8 @@ class network{
     std::shared_ptr<Matrix> targetValue_;
     std::shared_ptr<Node> lastLayerPtr;
 
-    void (network::*activationFuncPtr)(Matrix&) = &network::sigmoid;
-    std::shared_ptr<Matrix> (network::*activationDerivativeFuncPtr)(const Matrix&) = &network::sigPrime;
-
+    void (network::*activationFuncPtr)(Matrix&) = &network::relu;
+    std::shared_ptr<Matrix> (network::*activationDerivativeFuncPtr)(const Matrix&) = &network::reluPrime;
 
 
 
@@ -50,7 +49,7 @@ class network{
 
     std::shared_ptr<Node> create_network(){
 
-        std::shared_ptr<Matrix> temp_weights = std::make_shared<Matrix>((*layers_).at(1),(*layers_).at(0)); 
+        std::shared_ptr<Matrix> temp_weights = std::make_shared<Matrix>((*layers_).at(1),(*layers_).at(0),true); 
         std::shared_ptr<Matrix> temp_biases  = std::make_shared<Matrix>((*layers_).at(1),1,true,true);
         
         auto head = std::make_shared<Node>(temp_weights,temp_biases);
@@ -97,7 +96,7 @@ class network{
 
             auto t = std::make_shared<Matrix>(layers.at(0),1);
             
-            std::normal_distribution<double> dist(10, 10); //average 0, variance .5
+            std::normal_distribution<double> dist(50, 10); //average 0, variance .5
 
             // activationFuncPtr = &maf;{}
 
@@ -116,7 +115,7 @@ class network{
                 hiddenLayerGrad(*lastLayerPtr->prev_.lock());
             }
             
-            t->data_[0] = 10;
+            t->data_[0] = 45;
             forwardPass(t);
 
             // myNet->printDimensions();
@@ -225,6 +224,19 @@ class network{
                     matrix1(i,0) = 0;
                 }
             }
+        }
+
+        std::shared_ptr<Matrix> reluPrime(const Matrix& matrix1){
+            std::shared_ptr<Matrix> derivativeRelu = std::make_shared<Matrix>(matrix1.getRows(),matrix1.getColumns(),true,true);
+            //Matrix::Matrix(int m, int n, bool initToZero, bool extraUselessParameter)
+            for (int i =0; i< matrix1.getRows(); i++){
+                if (matrix1(i,0) > 0){
+                    (*derivativeRelu)(i,0) = 1;
+                }
+                //since derivativeRelu was auto initialized to zero dont need an else
+            }
+            
+            return derivativeRelu;
         }
         
         void sigmoid(Matrix& matrix1){
@@ -438,12 +450,12 @@ class network{
         
             std::transform((outputlayer.weights_->data_).begin(),(outputlayer.weights_->data_).end(),
             (outputlayer.gradients_weights->data_).begin(),(outputlayer.weights_->data_).begin(),
-             [this](double i, double j) { return i - (j * this->learningRate ); }); // good
+             [this](double i, double j) { return (i - (j * this->learningRate )); }); // good
 
             
             std::transform(outputlayer.biases_->data_.begin(),outputlayer.biases_->data_.end(),
             outputlayer.dels_->data_.begin(),outputlayer.biases_->data_.begin(),
-            std::minus<double>());
+            [this](double i, double j) {return (i - (j * this->learningRate));});
             // std::cout << (*outputlayer.dels_).getRows() << "x" << (*outputlayer.dels_).getColumns() << std::endl;
             // std::cout << (*outputlayer.gradients_weights).getRows() << "x" << (*outputlayer.gradients_weights).getColumns() << std::endl;
 
@@ -545,11 +557,11 @@ class network{
             //0.00808702040489917 - 0.00023051553810784256= 0.0078
             std::transform((currHiddenLayer->weights_->data_).begin(),(currHiddenLayer->weights_->data_).end(),
              (currHiddenLayer->gradients_weights->data_).begin(), (currHiddenLayer->weights_->data_).begin(),
-             [this](double i, double j) { return i - (j * this->learningRate ); });//good
+             [this](double i, double j) { return (i - (j * this->learningRate )); });//good
 
             std::transform(currHiddenLayer->biases_->data_.begin(), currHiddenLayer->biases_->data_.end(),
             currHiddenLayer->dels_->data_.begin(), currHiddenLayer->biases_->data_.begin(),
-            [this](double i, double j) { return i - (j * this->learningRate ); });
+            [this](double i, double j) { return (i - (j * this->learningRate )); });
             // not sure if it will work
             // std::cout << " four " << std::endl;
             // (currHiddenLayer->dels_->printDimensionz());
@@ -672,7 +684,7 @@ class network{
       
  
 int main(){
-    std::vector<int> myVe = {1,1,1};
+    std::vector<int> myVe = {1,10,8,6,1};
     network myNetwork(myVe);
 
 
