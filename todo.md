@@ -38,3 +38,6 @@ sigmoid should apply to output layer
 
 
 leaky relu check gemini
+
+
+21.11230572053309

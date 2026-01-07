@@ -27,6 +27,8 @@
 #include "matrix.h"
 #include "node.h"
 #include <random>
+
+#include <fstream>
 std::random_device rdn;
 std::mt19937 genn(rdn());
 
@@ -44,8 +46,10 @@ class network{
 
 
 
-    double learningRate{.01};
-
+    double learningRate{.00001};
+    double weight_init_mean{0};
+    double weight_init_variance = sqrt(2 / ((*layers_).at(0) + (*layers_).at((*layers_).size()-1))); 
+    //sqrt(2/(input + output))
 
     std::shared_ptr<Node> create_network(){
 
@@ -56,17 +60,17 @@ class network{
         head->isInputLayer = true;
         
         
-        temp_weights = std::make_shared<Matrix>((*layers_).at(2),(*layers_).at(1));
+        temp_weights = std::make_shared<Matrix>((*layers_).at(2),(*layers_).at(1),true,weight_init_mean,weight_init_variance);
         temp_biases  = std::make_shared<Matrix>((*layers_).at(2),1,true,true);
         auto nextLeaf = std::make_shared<Node>(temp_weights,temp_biases);
-
+ 
         head->next_ = nextLeaf;
         nextLeaf->prev_ = head;
         //2x3x2x4
         // nextLeaf->prev_ = std::make_shared<Node>head;
         // head.next_ = nextLeaf;
         for (int i = 3; i < layers_->size(); i++){ // minus one since the last layer doesn't have w/b
-            temp_weights = std::make_shared<Matrix>((*layers_).at(i),(*layers_).at(i-1));
+            temp_weights = std::make_shared<Matrix>((*layers_).at(i),(*layers_).at(i-1),true,weight_init_mean,weight_init_variance);
             temp_biases = std::make_shared<Matrix>((*layers_).at(i),1,true,true);
 
             nextLeaf->next_ = std::make_shared<Node>(temp_weights,temp_biases);
@@ -96,27 +100,63 @@ class network{
 
             auto t = std::make_shared<Matrix>(layers.at(0),1);
             
-            std::normal_distribution<double> dist(50, 10); //average 0, variance .5
+            std::normal_distribution<double> dist(20, 5); //average 0, variance .5
 
             // activationFuncPtr = &maf;{}
+            std::vector<double> inputVector;
+            std::vector<double> predictedOutputVector;
+            int residualThreshReachedCount = 0;
+            int residualCountToReach = 5;
+            double residualThreshold{0.1};
+            
+            
 
             for (int i = 1; i < 1000; i+=1){
                 double randoDouble = dist(genn);
                 // std::cout << randoDouble << std::endl;
                 t->data_[0] = randoDouble;
-                targetValue_->data_[0] = 0.5 * randoDouble;
-               
+                targetValue_->data_[0] = randoDouble * randoDouble;
+
+                std::cout << "My input: " << t->data_[0] << std::endl;
+                std::cout << "My expected output: " << targetValue_->data_[0] << std::endl;
+                inputVector.push_back(t->data_[0]);
                 // // should add argument for num of times so we can have mini batches/ batches
                 forwardPass(t);
+                predictedOutputVector.push_back(lastLayerPtr->aOut_->data_.at(0));
+
                 // lastLayerPtr->weights_->printMatrix();
+                
+                if (abs(lastLayerPtr->residuals_->data_.at(0)) < residualThreshold){
+                    residualThreshReachedCount++;
+                    if (residualThreshReachedCount >= residualCountToReach){
+                        std::cout << "Reached residual of " << residualThreshold << " or smaller " << residualCountToReach 
+                        << " times in a row!\nTerminating from for loop." << std::endl;
+                        break;
+                    }
+                }
+                else {
+                    
+                    residualThreshReachedCount = 0;
+                }
+                
                 
                 outputLayerGrad(*lastLayerPtr);
                 // std::cout << "f\nf\nn\n";
                 hiddenLayerGrad(*lastLayerPtr->prev_.lock());
             }
             
-            t->data_[0] = 45;
-            forwardPass(t);
+
+            // t->data_[0] = 45;
+            // forwardPass(t);
+
+            std::fstream f;
+            f.open("xy.txt",std::ios::app);
+
+            for (int p = 0; p < predictedOutputVector.size(); p++){
+                f << "(" << inputVector.at(p) << "," << predictedOutputVector.at(p) << "),";// << std::endl;
+            }
+            f.close();
+
 
             // myNet->printDimensions();
 
@@ -221,7 +261,7 @@ class network{
         void relu(Matrix& matrix1){
             for (int i =0; i < matrix1.getRows(); i++){
                 if (matrix1(i,0) <= 0){
-                    matrix1(i,0) = 0;
+                    matrix1(i,0) = matrix1(i,0) * 0.01;
                 }
             }
         }
@@ -232,6 +272,8 @@ class network{
             for (int i =0; i< matrix1.getRows(); i++){
                 if (matrix1(i,0) > 0){
                     (*derivativeRelu)(i,0) = 1;
+                }else{
+                    (*derivativeRelu)(i,0) = 0.01;
                 }
                 //since derivativeRelu was auto initialized to zero dont need an else
             }
@@ -284,9 +326,22 @@ class network{
         // used so we can ammend the residuals for the output layer 
         void ssr(Matrix& predicted_matrix, Matrix& target_matrix, bool isALayerGiven, std::shared_ptr<Node> givenLayerPtr){
             (givenLayerPtr)->residuals_ = std::make_shared<Matrix>(predicted_matrix.getRows(),predicted_matrix.getColumns());
+
             double sum{0};
             std::transform(predicted_matrix.data_.begin(),predicted_matrix.data_.end(),target_matrix.data_.begin(),
             (givenLayerPtr)->residuals_->data_.begin(), std::minus<double>()); // good
+            // if ((givenLayerPtr)->residuals_->data_[0] <0.01 && (givenLayerPtr)->residuals_->data_[0] > 0){
+            //     std::cout << (givenLayerPtr)->residuals_->data_[0] << std::endl;
+            //     std::cout << "reached a small residual ^^" << std::endl;
+            //     exit(0);
+            // }
+
+            
+            /*
+            
+                        DO NOT SEEM TO BE USING totalLoss THUS BELOW CODE IS UNNECESSARY??
+                            WILL MATTER LATER WHEN I WANT TO TRACK HOW WELL IT IS LEARNING
+                                                            ***
 
             auto lossMatrix = std::make_shared<Matrix>(predicted_matrix.getRows(),predicted_matrix.getColumns());
 
@@ -299,7 +354,7 @@ class network{
                 sum += (*lossMatrix)(j,0);
                 
             }
-            givenLayerPtr->totalLoss_ = sum;
+            givenLayerPtr->totalLoss_ = sum;*/
         }
         void forwardPass(std::shared_ptr<Matrix> input){
             std::shared_ptr<Matrix> product = input;
@@ -334,7 +389,7 @@ class network{
                 
                 // relu(*product);
                 (this->*activationFuncPtr)(*product);
-                nextOne->activationOut = (this->*activationDerivativeFuncPtr)(*product);
+                nextOne->activationDerivativeOut = (this->*activationDerivativeFuncPtr)(*product);
                 
 
 
@@ -423,16 +478,16 @@ class network{
        void outputLayerGrad(Node& outputlayer){
              std::cout << "--------OUTPUTlayerGrad begin-------" << std::endl;
         //   (*outputlayer.residuals_).printMatrix();
-            // std::shared_ptr<Matrix> activationOut = ((sigPrime(*outputlayer.z))); //fixx
+            // std::shared_ptr<Matrix> activationDerivativeOut = ((sigPrime(*outputlayer.z))); //fixx
             // (myMat).printMatrix();
             // std::cout << (*outputlayer.prev_->z).getRows() << "x" << (*outputlayer.prev_->z).getColumns() << std::endl;
 
             // std::cout << (*outputlayer.residuals_).getRows() << "x" << (*outputlayer.residuals_).getColumns() << std::endl;
 
-            // std::cout << (*activationOut).getRows() << "x" << (*activationOut).getColumns() << std::endl;
-            // std::cout << (*outputlayer.activationOut).getRows() << "x" << (*outputlayer.activationOut).getColumns() << std::endl;
+            // std::cout << (*activationDerivativeOut).getRows() << "x" << (*activationDerivativeOut).getColumns() << std::endl;
+            // std::cout << (*outputlayer.activationDerivativeOut).getRows() << "x" << (*outputlayer.activationDerivativeOut).getColumns() << std::endl;
             // exit(0);
-          outputlayer.dels_ = multiplyVector(*outputlayer.residuals_,*outputlayer.activationOut);// (a_j - y_j) * sig`(z_j)
+          outputlayer.dels_ = multiplyVector(*outputlayer.residuals_,*outputlayer.activationDerivativeOut);// (a_j - y_j) * activation`(z_j)
             //  outputlayer.dels_ =outputlayer.residuals_;// (a_j - y_j) * sig`(z_j) this is when it is linear thus no sigmoid for output layer
 
           outputlayer.gradients_weights = multiplyTransposem2(*outputlayer.dels_,*outputlayer.prev_.lock()->aOut_);// dL/w_i,j = (del_j) * a_i (transpose a_i)
@@ -527,7 +582,7 @@ class network{
             auto meh = multiplyTransposem1(*nextLayer->weights_,*nextLayer->dels_);
             meh->printDimensionz();
 
-            currHiddenLayer->dels_ = multiplyVector(*meh,*currHiddenLayer->activationOut);
+            currHiddenLayer->dels_ = multiplyVector(*meh,*currHiddenLayer->activationDerivativeOut);
             currHiddenLayer->dels_->printDimensionz();
             if (currHiddenLayer->isInputLayer){
                 multiplyTransposem2(*currHiddenLayer->dels_,*currHiddenLayer->input_); //since i don't have an 'input layer' necessarily i cant use curr->prev
@@ -648,7 +703,7 @@ class network{
             auto oneMinusMatrixPtr = std::make_shared<Matrix>(sigZ1.getRows(),sigZ1.getColumns());
             
             for (int j =0; j < sigZ1.getRows(); j++){
-                (*oneMinusMatrixPtr)(0,j) =1 - (sigZ1)(0,j);
+                (*oneMinusMatrixPtr)(j,0) =1 - (sigZ1)(j,0);
 
             }
             return oneMinusMatrixPtr;
@@ -684,7 +739,7 @@ class network{
       
  
 int main(){
-    std::vector<int> myVe = {1,10,8,6,1};
+    std::vector<int> myVe = {1,8,8,1};
     network myNetwork(myVe);
 
 

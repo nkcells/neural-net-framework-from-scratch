@@ -8,13 +8,14 @@
 
 class Matrix{
     int rows_, columns_;
+    double mean, variance;
 
-    void rando();
+    void rando(double mean, double variance);
     void initToZeroFunc();
     public:
         std::vector<double> data_;
         Matrix(int m, int n, bool initToZero, bool neededAnExtraParameter);
-        Matrix(int m, int n, bool randomize = true);
+        Matrix(int m, int n, bool randomize = true, double mean = 1, double variance = 0.25);
         Matrix(const Matrix& inputMatrix );
         
         double& operator()(int i, int j);
@@ -26,6 +27,7 @@ class Matrix{
 
         void printMatrix();
         void printDimensionz();
+    
         
 };
 #endif

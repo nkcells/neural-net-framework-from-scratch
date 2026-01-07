@@ -6,10 +6,10 @@
 std::random_device rd;
 std::mt19937 gen(rd());
 
-void Matrix::rando(){
+void Matrix::rando(double mean, double variance){
     for (int i =0; i< rows_; i++){
         for (int j = 0; j < columns_; j++){
-            std::normal_distribution<double> dist(5, 5);
+            std::normal_distribution<double> dist(mean, variance);
             data_[i * columns_ + j] = dist(gen);
         }
     }
@@ -27,9 +27,9 @@ Matrix::Matrix(int m, int n, bool initToZero, bool extraUselessParameter) : data
         initToZeroFunc();
     }
 }
-Matrix::Matrix(int m, int n, bool randomize) : data_(m*n), rows_(m), columns_(n){
+Matrix::Matrix(int m, int n, bool randomize, double mean, double variance) : data_(m*n), rows_(m), columns_(n){
     if (randomize){
-        rando();
+        rando(mean,variance);
     }
 }
 Matrix::Matrix(const Matrix& inputMatrix ){ // copy constructor
