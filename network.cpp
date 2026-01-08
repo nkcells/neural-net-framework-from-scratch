@@ -41,8 +41,8 @@ class network{
     std::shared_ptr<Matrix> targetValue_;
     std::shared_ptr<Node> lastLayerPtr;
 
-    void (network::*activationFuncPtr)(Matrix&) = &network::relu;
-    std::shared_ptr<Matrix> (network::*activationDerivativeFuncPtr)(const Matrix&) = &network::reluPrime;
+    void (network::*activationFuncPtr)(Matrix&) = &network::leakyRelu;
+    std::shared_ptr<Matrix> (network::*activationDerivativeFuncPtr)(const Matrix&) = &network::leakyReluPrime;
 
 
 
@@ -100,7 +100,7 @@ class network{
 
             auto t = std::make_shared<Matrix>(layers.at(0),1);
             
-            std::normal_distribution<double> dist(20, 5); //average 0, variance .5
+            std::normal_distribution<double> dist(0, 4); //average 0, variance .5
 
             // activationFuncPtr = &maf;{}
             std::vector<double> inputVector;
@@ -111,7 +111,7 @@ class network{
             
             
 
-            for (int i = 1; i < 1000; i+=1){
+            for (int i = 1; i < 10000; i+=1){
                 double randoDouble = dist(genn);
                 // std::cout << randoDouble << std::endl;
                 t->data_[0] = randoDouble;
@@ -261,6 +261,13 @@ class network{
         void relu(Matrix& matrix1){
             for (int i =0; i < matrix1.getRows(); i++){
                 if (matrix1(i,0) <= 0){
+                    matrix1(i,0) = 0;
+                }
+            }
+        }
+        void leakyRelu(Matrix& matrix1){
+            for (int i =0; i < matrix1.getRows(); i++){
+                if (matrix1(i,0) <= 0){
                     matrix1(i,0) = matrix1(i,0) * 0.01;
                 }
             }
@@ -272,10 +279,22 @@ class network{
             for (int i =0; i< matrix1.getRows(); i++){
                 if (matrix1(i,0) > 0){
                     (*derivativeRelu)(i,0) = 1;
+                }
+                //since derivativeRelu was auto initialized to zero dont need an else
+            }
+            
+            return derivativeRelu;
+        }
+
+        std::shared_ptr<Matrix> leakyReluPrime(const Matrix& matrix1){
+            std::shared_ptr<Matrix> derivativeRelu = std::make_shared<Matrix>(matrix1.getRows(),matrix1.getColumns(),true,true);
+            //Matrix::Matrix(int m, int n, bool initToZero, bool extraUselessParameter)
+            for (int i =0; i< matrix1.getRows(); i++){
+                if (matrix1(i,0) > 0){
+                    (*derivativeRelu)(i,0) = 1;
                 }else{
                     (*derivativeRelu)(i,0) = 0.01;
                 }
-                //since derivativeRelu was auto initialized to zero dont need an else
             }
             
             return derivativeRelu;
@@ -739,7 +758,7 @@ class network{
       
  
 int main(){
-    std::vector<int> myVe = {1,8,8,1};
+    std::vector<int> myVe = {1,8,4,8,1};
     network myNetwork(myVe);
 
 

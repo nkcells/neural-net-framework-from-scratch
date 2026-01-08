@@ -41,3 +41,8 @@ leaky relu check gemini
 
 
 21.11230572053309
+
+
+// batch over every training example
+// mini-batch over a subset of training example
+// stochastic over only 1 traning example
