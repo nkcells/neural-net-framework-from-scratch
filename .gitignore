@@ -2,4 +2,8 @@
 *.dysm
 *.vscode
 *.json
-
+*.exe
+*.txt
+*.lib
+*nsys-rep
+*.sqlite

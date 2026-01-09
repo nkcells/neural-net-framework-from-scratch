@@ -1,48 +1,28 @@
-Check math in hiddenLayerGrad specifically indexes
-
-More than 1 hidden layer
-
-Training input
 
 
-I am getting inconcisistencies during runtime sometimes works sometimes doesn't
-
-
-
-
-Weight matrix shape = (number of neurons in next layer) × (number of neurons in previous layer)
+Weight matrix shape = (number of neurons in current layer) × (number of neurons in previous layer)
 
 Bias vector shape = (number of neurons in that layer) × 1
 
-mini-batches
-![alt text](image.png)
-
-
-We are not updating the biases at all
-no sigmoid last layergt5er :done
-must fix std::transform
-
-check void ssr(Matrix& predicted_matrix, Matrix& target_matrix, bool isALayerGiven, std::shared_ptr<Node> givenLayerPtr)
-    for loop
 
 
 
-![alt text](image-1.png)
 
 
 
-should have one point in the code that i use to change the act fun
+* __batch over__: every training example
+* __mini-batch__: over a subset of training example
+* __stochastic__: over only 1 traning example
 
 
-sigmoid should apply to output layer
-
-
-leaky relu check gemini
-
-
-21.11230572053309
-
-
-// batch over every training example
-// mini-batch over a subset of training example
-// stochastic over only 1 traning example
+### More stuff
+- [x]Implement more than 1 hidden layer
+- [x][must fix std::transform](./reference_photos/std_transform_correct.png)
+- [x][During runtime sometimes works sometimes doesn't](./reference_photos/Circular_Reference.png)
+- [x]should have one point in the code that i use to change the act fun
+- [x]Generate training input
+- [x]sigmoid should apply to output layer
+- [x]leaky relu check gemini
+- [ ]Integrate minibatches
+- [ ]Integrate cuda
+- [ ][Cleaning up directory: __Integrating CUDA into C++ Projects__](https://gemini.google.com/share/8833e05f03ad)
