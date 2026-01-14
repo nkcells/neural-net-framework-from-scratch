@@ -3,6 +3,7 @@
 *.vscode
 *.json
 *.exe
+*.exp
 *.txt
 *.lib
 *nsys-rep

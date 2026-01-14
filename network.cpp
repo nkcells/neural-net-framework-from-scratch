@@ -77,7 +77,7 @@ class network{
             nextLeaf->next_->prev_ = nextLeaf; //next leaf's prev will point to node we on now
             nextLeaf = nextLeaf->next_;
             
-            std::cout << "a new layer " << i << std::endl;
+            //() std::cout << "a new layer " << i << std::endl;
          
         }
 
@@ -117,8 +117,8 @@ class network{
                 t->data_[0] = randoDouble;
                 targetValue_->data_[0] = randoDouble * randoDouble;
 
-                std::cout << "My input: " << t->data_[0] << std::endl;
-                std::cout << "My expected output: " << targetValue_->data_[0] << std::endl;
+                //()std::cout << "My input: " << t->data_[0] << std::endl;
+                //()std::cout << "My expected output: " << targetValue_->data_[0] << std::endl;
                 inputVector.push_back(t->data_[0]);
                 // // should add argument for num of times so we can have mini batches/ batches
                 forwardPass(t);
@@ -381,29 +381,30 @@ class network{
             std::shared_ptr<Node> nextOne = myNet;
             nextOne->input_ = std::make_shared<Matrix>(*input);
             while (1){
-                std::cout << "<-------- Forward pass time -------->" << std::endl;
+                //()std::cout << "<-------- Forward pass time -------->" << std::endl;
 
-                std::cout << "Trying to multiply a " << (*(nextOne->weights_)).getRows() << "x" << (*(nextOne->weights_)).getColumns()
+                /*()std::cout << "Trying to multiply a " << (*(nextOne->weights_)).getRows() << "x" << (*(nextOne->weights_)).getColumns()
                  << "*" << 
                  (*product).getRows() << "x"  << (*product).getColumns()
                   << std::endl;
+                */
                 
-                (nextOne->weights_)->printMatrix();
-                (*product).printMatrix();
+                //()(nextOne->weights_)->printMatrix();
+                //()(*product).printMatrix();
                 
                 // std::cout<<"multiply" <<std::endl;
 
                 product = multiply(*(nextOne->weights_),*product);
                 // std::cout<<"done"<<std::endl;
-                std::cout << "Product after matrix multiplication:" << std::endl;
-                (*product).printMatrix();
-                std::cout<<std::endl;
+                //()std::cout << "Product after matrix multiplication:" << std::endl;
+                //()(*product).printMatrix();
+                //()std::cout<<std::endl;
 
                 product = add(*product,*(nextOne->biases_));
-                std::cout << "After addition: "<<std::endl;
-                (*product).printMatrix();
+                //()std::cout << "After addition: "<<std::endl;
+                //()(*product).printMatrix();
                 nextOne->z = std::make_shared<Matrix>(*product);
-                std::cout << "{" << (*nextOne->z).getRows() << 'x' << (*nextOne->z).getColumns() << "}" << std::endl;
+                //()std::cout << "{" << (*nextOne->z).getRows() << 'x' << (*nextOne->z).getColumns() << "}" << std::endl;
                 // (*product).printMatrix();
                 
                 // relu(*product);
@@ -433,15 +434,15 @@ class network{
 
                 nextOne = nextOne->next_;
             } 
-            std::cout << "Output:  " << std::endl;
-            (*product).printMatrix();
+            //()std::cout << "Output:  " << std::endl;
+            //()(*product).printMatrix();
             
-            std::cout << "\n";
+            ///std::cout << "\n";
             ssr(*product,*targetValue_,true,nextOne);
 
             // nextOne->residuals_ = std::make_shared<Matrix>(*product);
             // nextOne->totalLoss_ = residualSum;
-            std::cout << "------------done with forward------------------" << std::endl;
+            //()std::cout << "------------done with forward------------------" << std::endl;
 
         }
         // for last hidden compute gradient
@@ -460,7 +461,7 @@ class network{
             if (matrix1.getRows() != matrix2.getRows()){
                 std::cerr << "Error{dotProdRows}: input matrices do not have same length" << std::endl;
             }
-            std::cout<<"oi" <<std::endl;
+            //()std::cout<<"oi" <<std::endl;
 
             double total{0};
             // double first{99};
@@ -469,7 +470,7 @@ class network{
 
                 total += matrix1(j,columnToIterate1) * matrix2(j,columnToIterate2);
             }
-            std::cout<<"oi" <<std::endl;
+            //()std::cout<<"oi" <<std::endl;
             return total;
         }
 
@@ -481,7 +482,7 @@ class network{
             if (matrix1.getColumns() != matrix2.getColumns()){
                 std::cerr << "Error: dotProd input matrices do not have same length" << std::endl;
             }
-            std::cout<<"oi" <<std::endl;
+            //()std::cout<<"oi" <<std::endl;
 
             double total{0};
             // double first{99};
@@ -490,12 +491,12 @@ class network{
 
                 total += matrix1(rowToIterate1,j) * matrix2(rowToIterate2,j);
             }
-            std::cout<<"oi" <<std::endl;
+            //()std::cout<<"oi" <<std::endl;
             return total;
        }
 
        void outputLayerGrad(Node& outputlayer){
-             std::cout << "--------OUTPUTlayerGrad begin-------" << std::endl;
+             //()std::cout << "--------OUTPUTlayerGrad begin-------" << std::endl;
         //   (*outputlayer.residuals_).printMatrix();
             // std::shared_ptr<Matrix> activationDerivativeOut = ((sigPrime(*outputlayer.z))); //fixx
             // (myMat).printMatrix();
@@ -533,7 +534,7 @@ class network{
             // std::cout << (*outputlayer.dels_).getRows() << "x" << (*outputlayer.dels_).getColumns() << std::endl;
             // std::cout << (*outputlayer.gradients_weights).getRows() << "x" << (*outputlayer.gradients_weights).getColumns() << std::endl;
 
-            std::cout << "-------------done with outputlayer grad---------------" << std::endl;
+            //()std::cout << "-------------done with outputlayer grad---------------" << std::endl;
        }
 
        void scaleFirstColumn(Matrix& myVec, double scalar){
@@ -555,16 +556,16 @@ class network{
         bool stopNext{false}; 
 
                
-        std::cout << "---------HIDDENlayerGrad begin--------------" << std::endl;
+        //()std::cout << "---------HIDDENlayerGrad begin--------------" << std::endl;
 
         std::shared_ptr<Node> currHiddenLayer = hidLayer.next_->prev_.lock(); // this is fine but in this case but error prone if we do .next->prev on last layer since it doesn't exist
         std::shared_ptr<Node> nextLayer;
-        (*currHiddenLayer).printDimensions();
+        //()(*currHiddenLayer).printDimensions();
 
         while (1){ // this prob wont work since we need a_out of input layer
             nextLayer = currHiddenLayer->next_; 
 
-            nextLayer->printDimensions();
+            //()nextLayer->printDimensions();
 
             /**for (int i=0; i<currHiddenLayer->weights_->getColumns(); i++){
                 std::cout << "ding" << std::endl;
@@ -596,24 +597,24 @@ class network{
                 std::cout << "o" << std::endl;
                 std::cout << (*currHiddenLayer->dels_).getRows() << "xx" << (*currHiddenLayer->dels_).getColumns() << std::endl;
             }   **/
-            std::cout << "hidden grad time" << std::endl;
+            //()std::cout << "hidden grad time" << std::endl;
             
             auto meh = multiplyTransposem1(*nextLayer->weights_,*nextLayer->dels_);
-            meh->printDimensionz();
+            // meh->printDimensionz();
 
             currHiddenLayer->dels_ = multiplyVector(*meh,*currHiddenLayer->activationDerivativeOut);
-            currHiddenLayer->dels_->printDimensionz();
+            //()currHiddenLayer->dels_->printDimensionz();
             if (currHiddenLayer->isInputLayer){
                 multiplyTransposem2(*currHiddenLayer->dels_,*currHiddenLayer->input_); //since i don't have an 'input layer' necessarily i cant use curr->prev
             }else{
                 (currHiddenLayer->gradients_weights) = multiplyTransposem2(*currHiddenLayer->dels_,*currHiddenLayer->prev_.lock()->aOut_);
             }
 
-            currHiddenLayer->gradients_weights->printDimensionz();
+            //()currHiddenLayer->gradients_weights->printDimensionz();
 
 
             // scaleAll((*currHiddenLayer->gradients_weights),learningRate); //switched to scaleAll instead for scale first column may be wrong
-            currHiddenLayer->gradients_weights->printDimensionz();
+            //()currHiddenLayer->gradients_weights->printDimensionz();
 
 
 
@@ -705,7 +706,7 @@ class network{
             if (matrix1.getRows() != matrix2.getRows()){
                 std::cerr << "Error{dotProdRows}: input matrices do not have same length" << std::endl;
             }
-            std::cout<<"oi" <<std::endl;
+            //()std::cout<<"oi" <<std::endl;
             std::shared_ptr<Matrix> product = std::make_shared<Matrix>(matrix1.getRows(),1);
             // double total{0};
             // double first{99};
@@ -714,7 +715,7 @@ class network{
 
                 (*product)(j,0) = matrix1(j,columnToIterate1) * matrix2(j,columnToIterate2);
             }
-            std::cout<<"boi" <<std::endl;
+            //()std::cout<<"boi" <<std::endl;
             return product;
         }
 
@@ -758,10 +759,11 @@ class network{
       
  
 int main(){
-    std::vector<int> myVe = {1,8,4,8,1};
+    std::vector<int> myVe = {1,1,1};
     network myNetwork(myVe);
 
 
     return 0;
 }
+
 
