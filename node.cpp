@@ -5,6 +5,7 @@ Node::Node(std::shared_ptr<Matrix>& weights,std::shared_ptr<Matrix>& biases) : w
     next_ = nullptr;
     // prev_ = nullptr;
     isOutputlayer = false;
+    isInputLayer = false;
     }
 void Node::printNodes(){
     // weights_->printMatrix();

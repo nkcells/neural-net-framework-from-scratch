@@ -349,6 +349,8 @@ class network{
             double sum{0};
             std::transform(predicted_matrix.data_.begin(),predicted_matrix.data_.end(),target_matrix.data_.begin(),
             (givenLayerPtr)->residuals_->data_.begin(), std::minus<double>()); // good
+
+                                        /*IMPORTANT*/
             // if ((givenLayerPtr)->residuals_->data_[0] <0.01 && (givenLayerPtr)->residuals_->data_[0] > 0){
             //     std::cout << (givenLayerPtr)->residuals_->data_[0] << std::endl;
             //     std::cout << "reached a small residual ^^" << std::endl;
@@ -405,7 +407,6 @@ class network{
                 //()(*product).printMatrix();
                 nextOne->z = std::make_shared<Matrix>(*product);
                 //()std::cout << "{" << (*nextOne->z).getRows() << 'x' << (*nextOne->z).getColumns() << "}" << std::endl;
-                // (*product).printMatrix();
                 
                 // relu(*product);
                 (this->*activationFuncPtr)(*product);
@@ -413,15 +414,7 @@ class network{
                 
 
 
-                //to skip activation on output layer
-                /*if (nextOne->isOutputlayer == false){
-                    sigmoid(*product);
-                    std::cout << "After sigmoid: " << std::endl;
-                    (*product).printMatrix();
-                } else {
-                    std::cout << "Simoid skipped {output layer}" << std::endl;
-                }*/
-                
+ 
                 
 
                 nextOne->aOut_ = std::make_shared<Matrix>(*product);
@@ -445,18 +438,10 @@ class network{
             //()std::cout << "------------done with forward------------------" << std::endl;
 
         }
-        // for last hidden compute gradient
-        // general function after that to pass it back
 
-        // for any hidden
-        /*
-        del of all neurons in the prev layer * sig`(z) * weight connecting them and sum it together
-        */
        
         double dotProdRows(const Matrix& matrix1, const Matrix& matrix2, int columnToIterate1=0, int columnToIterate2=0){ //given two matrices it will return the dot prod of a specified column in them
-            // if (matrix1.getRows() != 1 || matrix2.getRows() != 1){
-            //     std::cerr << "Error: dotProd input matrices #rows != 1" << std::endl;
-            // } else 
+     
             
             if (matrix1.getRows() != matrix2.getRows()){
                 std::cerr << "Error{dotProdRows}: input matrices do not have same length" << std::endl;
@@ -464,8 +449,7 @@ class network{
             //()std::cout<<"oi" <<std::endl;
 
             double total{0};
-            // double first{99};
-            // double secon{88};
+
             for (int j = 0; j < matrix1.getRows(); j++){
 
                 total += matrix1(j,columnToIterate1) * matrix2(j,columnToIterate2);
@@ -475,18 +459,15 @@ class network{
         }
 
         double dotProd(const Matrix& matrix1, const Matrix& matrix2, int rowToIterate1=0, int rowToIterate2=0){
-            // if (matrix1.getRows() != 1 || matrix2.getRows() != 1){
-            //     std::cerr << "Error: dotProd input matrices #rows != 1" << std::endl;
-            // } else 
+   
             
             if (matrix1.getColumns() != matrix2.getColumns()){
                 std::cerr << "Error: dotProd input matrices do not have same length" << std::endl;
             }
-            //()std::cout<<"oi" <<std::endl;
+     
 
             double total{0};
-            // double first{99};
-            // double secon{88};
+    
             for (int j = 0; j < matrix1.getColumns(); j++){
 
                 total += matrix1(rowToIterate1,j) * matrix2(rowToIterate2,j);
@@ -497,16 +478,7 @@ class network{
 
        void outputLayerGrad(Node& outputlayer){
              //()std::cout << "--------OUTPUTlayerGrad begin-------" << std::endl;
-        //   (*outputlayer.residuals_).printMatrix();
-            // std::shared_ptr<Matrix> activationDerivativeOut = ((sigPrime(*outputlayer.z))); //fixx
-            // (myMat).printMatrix();
-            // std::cout << (*outputlayer.prev_->z).getRows() << "x" << (*outputlayer.prev_->z).getColumns() << std::endl;
 
-            // std::cout << (*outputlayer.residuals_).getRows() << "x" << (*outputlayer.residuals_).getColumns() << std::endl;
-
-            // std::cout << (*activationDerivativeOut).getRows() << "x" << (*activationDerivativeOut).getColumns() << std::endl;
-            // std::cout << (*outputlayer.activationDerivativeOut).getRows() << "x" << (*outputlayer.activationDerivativeOut).getColumns() << std::endl;
-            // exit(0);
           outputlayer.dels_ = multiplyVector(*outputlayer.residuals_,*outputlayer.activationDerivativeOut);// (a_j - y_j) * activation`(z_j)
             //  outputlayer.dels_ =outputlayer.residuals_;// (a_j - y_j) * sig`(z_j) this is when it is linear thus no sigmoid for output layer
 
@@ -563,46 +535,18 @@ class network{
         //()(*currHiddenLayer).printDimensions();
 
         while (1){ // this prob wont work since we need a_out of input layer
+
             nextLayer = currHiddenLayer->next_; 
 
             //()nextLayer->printDimensions();
 
-            /**for (int i=0; i<currHiddenLayer->weights_->getColumns(); i++){
-                std::cout << "ding" << std::endl;
-                for (int j =0; j<nextLayer->weights_->getColumns(); j++){
-                    std::cout << "murphy-start" <<std::endl;
-                    (nextLayer->dels_->printDimensionz());
-                    (currHiddenLayer->weights_->printDimensionz());
-                    summation = dotProd(*nextLayer->dels_, *currHiddenLayer->weights_,0,j); // 0:dels is a nx1
-                    std::cout << "murphy-0" <<std::endl;
-                    // auto hey = std::make_shared<M
-                    // this hasn't been initializized yet.
-                    (*currHiddenLayer->gradients_weights)(i,j) = (*nextLayer->dels_)(i,j) * (*currHiddenLayer->aOut_)(0,j) ; // no point in keeping track of this    
-                    std::cout << "murphy-1" <<std::endl;
-
-                    (*currHiddenLayer->weights_)(i,j) = (*currHiddenLayer->weights_)(i,j) - (learningRate * (*currHiddenLayer->gradients_weights)(i,j));
-                    std::cout << "murphy-2" <<std::endl;
-
-                }
-                
-
-                // *currHiddenLayer->gradients_weights = multiplyVector(*next)
-                // (*nextLayer)
-
-                //not sur why we index by i
-                std::cout << "m" << std::endl;
-                double cat = sigPrime((*currHiddenLayer->z)(i,0));
-                std::cout << "n" <<std::endl;
-                (*(currHiddenLayer->dels_))(0,i) = summation * cat; 
-                std::cout << "o" << std::endl;
-                std::cout << (*currHiddenLayer->dels_).getRows() << "xx" << (*currHiddenLayer->dels_).getColumns() << std::endl;
-            }   **/
-            //()std::cout << "hidden grad time" << std::endl;
-            
+            // std::cout << "hidden grad time" << std::endl;
             auto meh = multiplyTransposem1(*nextLayer->weights_,*nextLayer->dels_);
+
             // meh->printDimensionz();
 
             currHiddenLayer->dels_ = multiplyVector(*meh,*currHiddenLayer->activationDerivativeOut);
+            std::cout << "4" << std::endl;
             //()currHiddenLayer->dels_->printDimensionz();
             if (currHiddenLayer->isInputLayer){
                 multiplyTransposem2(*currHiddenLayer->dels_,*currHiddenLayer->input_); //since i don't have an 'input layer' necessarily i cant use curr->prev
@@ -610,11 +554,6 @@ class network{
                 (currHiddenLayer->gradients_weights) = multiplyTransposem2(*currHiddenLayer->dels_,*currHiddenLayer->prev_.lock()->aOut_);
             }
 
-            //()currHiddenLayer->gradients_weights->printDimensionz();
-
-
-            // scaleAll((*currHiddenLayer->gradients_weights),learningRate); //switched to scaleAll instead for scale first column may be wrong
-            //()currHiddenLayer->gradients_weights->printDimensionz();
 
 
 
@@ -628,6 +567,7 @@ class network{
 
                 exit(1);
             }        
+            std::cout << "6" << std::endl;
 
             //0.00808702040489917 - 0.00023051553810784256= 0.0078
             std::transform((currHiddenLayer->weights_->data_).begin(),(currHiddenLayer->weights_->data_).end(),
@@ -637,24 +577,7 @@ class network{
             std::transform(currHiddenLayer->biases_->data_.begin(), currHiddenLayer->biases_->data_.end(),
             currHiddenLayer->dels_->data_.begin(), currHiddenLayer->biases_->data_.begin(),
             [this](double i, double j) { return (i - (j * this->learningRate )); });
-            // not sure if it will work
-            // std::cout << " four " << std::endl;
-            // (currHiddenLayer->dels_->printDimensionz());
 
-
-            
-            // if (currHiddenLayer->prev_ != nullptr){
-            //     std::cout << "can keep going" << std::endl;
-            //     currHiddenLayer->input_->printDimensionz();
-            //     std::cout << "u" << std::endl;
-
-            // }else{
-            //     // ****** this doesn't work and i don't know why note to self
-            // std::cout << "we have reached the last hidden layer in hiddenLayerGrad" << std::endl;
-            // currHiddenLayer->gradients_weights = multiplyVector(*currHiddenLayer->dels_,*currHiddenLayer->input_);
-            // std::cout << "did that";
-            // // (currHiddenLayer->prev_->weights_->printDimensionz());
-            // }
             
             // if (stopNext) {break;}
             if (currHiddenLayer->prev_.lock() == nullptr) {
@@ -759,7 +682,7 @@ class network{
       
  
 int main(){
-    std::vector<int> myVe = {1,1,1};
+    std::vector<int> myVe = {1,2,2,1};
     network myNetwork(myVe);
 
 
