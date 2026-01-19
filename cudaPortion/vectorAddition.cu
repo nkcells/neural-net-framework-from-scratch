@@ -25,7 +25,7 @@ int main() {
 
     
     
-    cudaMalloc((void**)&d_c, sizeof(int)*n);
+    cudaMalloc((void**)&d_c, sizeof(int)*n); // void pointers can point to data of any type; we have a pointer to a pointer thus '**'   
     cudaMemcpy(d_c,h_c, sizeof(int)*n, cudaMemcpyHostToDevice);
         std::cout << "starting" <<std::endl;
 

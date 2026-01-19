@@ -546,7 +546,6 @@ class network{
             // meh->printDimensionz();
 
             currHiddenLayer->dels_ = multiplyVector(*meh,*currHiddenLayer->activationDerivativeOut);
-            std::cout << "4" << std::endl;
             //()currHiddenLayer->dels_->printDimensionz();
             if (currHiddenLayer->isInputLayer){
                 multiplyTransposem2(*currHiddenLayer->dels_,*currHiddenLayer->input_); //since i don't have an 'input layer' necessarily i cant use curr->prev
