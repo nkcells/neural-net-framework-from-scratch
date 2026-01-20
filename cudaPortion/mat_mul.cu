@@ -1,10 +1,49 @@
 #include <stdio.h>
 #include <iostream>
-#define lo 100
+#define lo 32
+#define tile_size_x 32 //should be divisible by 32
+#define tile_size_y 32 //should be divisible by 32
 
 
-__global__ void wxb(const int m1x, const int m2y, const int  m1ym2x, float* g_matrix1, float* g_matrix2, float* g_product ){ //kernel good that does loxlo * lo*lo multiplicaiton 
+//each block running this kernel will have 32x32 threads
+__global__ void wxb(const int N, float* g_matrix1, float* g_matrix2, float* g_product ){ //kernel good that does loxlo * lo*lo multiplicaiton 
     
+    // each blok is 2d
+    const int tidX = threadIdx.x;
+    const int tidY = threadIdx.y;
+
+
+    __shared__ float tile1[tile_size_x * tile_size_x];
+    __shared__ float tile2[tile_size_x * tile_size_x];
+    __shared__ float dot_product[tile_size_x * tile_size_x];
+
+    dot_product[(blockIdx.x * lo) + (tidY * lo + tidX)];//this is the tile of the output block we are targetting
+    // const int N_squared = pow(N,2);
+
+   
+    const int steps = N + (tile_size_x-1) / tile_size_x; // ceil
+    int index_x;
+    int index_y;
+    for (int i = 0; i < steps; i++ ){
+
+        index_x = (tile_size_x + ((blockIdx.x * tile_size_x*N)+(tidY * N + tidX))); // this is correct for any m*m tile size
+        index_y = (tile_size_x*N + (blockIdx.x * tile_size_x) + tidY*N + tidX); 
+        if (index_x < N){
+            tile1[tidY * tile_size_x + tidX] = g_matrix1[index_x]; //correctly retrieves a tile from global memory
+            
+        }
+        if (index_y < N){
+            tile2[tidY * tile_size_x + tidX] = g_matrix2[index_y]; //correctly retrieves tile from global memory
+        }
+        
+       
+    }
+    if (threadIdx.x < N && threadIdx.y < N){
+        tile1[tidY * lo + tidX] = g_matrix1[];
+        tile2[tidY * lo + tidX] = g_matrix1[(blockIdx.x * lo) + (tidY * lo + tidX)];
+    }
+    
+
     int threadID = blockIdx.x * lo + threadIdx.x; 
 
     int threadIDInverse = threadIdx.x * lo + blockIdx.y;
